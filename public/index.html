@@ -138,7 +138,7 @@ body{background:var(--sky);color:var(--ink);font-family:var(--f);font-weight:800
 .sec h4{margin:0;font-size:16px;font-weight:900}
 .chk{display:flex;align-items:center;gap:8px;font-size:13.5px}
 .chk input{width:18px;height:18px;accent-color:var(--ink)}
-label.btn{display:inline-flex;align-items:center;justify-content:center}
+label.btn,a.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
 .btn:disabled{opacity:.55;cursor:wait}
 body[data-mode="servidor"] #bjoin{display:none}
 #badmin{width:36px;height:36px;border-width:2.5px}
@@ -173,6 +173,7 @@ body[data-mode="servidor"] #bjoin{display:none}
     <button class="btn y sm" id="bjoin">💬 simular comentário</button>
     <button class="btn sm" id="brank">🏆 ranking</button>
     <button class="btn sm" id="bhelp">como entrar</button>
+    <a class="btn sm" id="bfollow" href="https://www.instagram.com/joguenoseutime/" target="_blank" rel="noopener">segue @joguenoseutime</a>
     <button class="circ" id="badmin" aria-label="Painel do criador"><svg viewBox="0 0 20 20" fill="none" stroke="#1c2230" stroke-width="2.2"><circle cx="10" cy="10" r="3"/><path d="M10 1.8v2.6M10 15.6v2.6M1.8 10h2.6M15.6 10h2.6M4.2 4.2l1.8 1.8M14 14l1.8 1.8M4.2 15.8 6 14M14 6l1.8-1.8" stroke-linecap="round"/></svg></button>
   </div>
   <div class="legal"><a href="/privacidade.html">privacidade</a> · <a href="/exclusao-de-dados.html">excluir meus dados</a></div>
@@ -216,7 +217,7 @@ body[data-mode="servidor"] #bjoin{display:none}
   <div class="card help" role="dialog" aria-labelledby="th">
     <h3 id="th">Como entrar <button class="circ" data-close aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></h3>
     <ol>
-      <li>Comente <b>"<span id="hjoin">Galo</span>"</b> (ou o nome do seu time) no vídeo do jogo em <b>@omiguelmeirelles</b>. Vale apelido: "mengão", "timão", "verdão"…</li>
+      <li>Comente <b>"<span id="hjoin">Galo</span>"</b> (ou o nome do seu time) no vídeo do jogo em <b>@joguenoseutime</b>. Vale apelido: "mengão", "timão", "verdão"…</li>
       <li>Você vira jogador do time com uma <b>posição sorteada</b> e seu @ aparece no estádio em até 1 minuto.</li>
       <li>Cada time tem 4 elencos de 22: <b>Principal, Sub-23, Sub-20 e Sub-17</b> (88 vagas). Quando lota, você entra na fila.</li>
       <li>Antes de cada jogo os <b>titulares são sorteados</b>; o resto fica no banco.</li>
