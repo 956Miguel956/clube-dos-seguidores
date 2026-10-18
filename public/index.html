@@ -139,6 +139,7 @@ body{background:var(--sky);color:var(--ink);font-family:var(--f);font-weight:800
   #count{font-size:16px}
 }
 @media (prefers-reduced-motion:reduce){.btn{transition:none}}
+body.video #top,body.video #bar,body.video #zoom,body.video #labels,body.video #panel,body.video #cv{display:none!important}
 
 .sec{display:flex;flex-direction:column;gap:8px;border:2.5px solid var(--chip);border-radius:16px;padding:10px 12px}
 .sec h4{margin:0;font-size:16px;font-weight:900}
@@ -225,8 +226,8 @@ body[data-mode="servidor"] #bjoin{display:none}
     <ol>
       <li>Comente <b>"<span id="hjoin">Galo</span>"</b> (ou o nome do seu time) no vídeo do jogo em <b>@joguenoseutime</b>. Vale apelido: "mengão", "timão", "verdão"…</li>
       <li>Você vira jogador do time com uma <b>posição sorteada</b> e seu @ aparece no estádio em até 1 minuto.</li>
-      <li>Cada time tem 4 elencos de 22: <b>Principal, Sub-23, Sub-20 e Sub-17</b> (88 vagas). Quando lota, você entra na fila.</li>
-      <li>Antes de cada jogo os <b>titulares são sorteados</b>; o resto fica no banco.</li>
+      <li>Os <b>11 primeiros são os titulares</b> e o <b>1º de todos é o capitão</b> 👑. Os próximos 11 são os <b>reservas</b>.</li>
+      <li>Depois vêm o <b>Sub-23, o Sub-20 e o Sub-17</b> (88 vagas por time). Quando lota, você entra na fila.</li>
       <li>Cada @ joga em <b>um time só</b>.</li>
       <li>Em breve: o mega campeonato entre todos os times do mapa.</li>
     </ol>
@@ -277,7 +278,7 @@ const openEl=c=>GC.openEl(mem,c.i);
 
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
 // titulares: os sorteados pelo servidor; se ainda não houve sorteio, um sorteio fixo por time (todo mundo vê igual)
-function titOf(ci){ if(!GC.titValid(mem,ci)) GC.sortear(mem,ci,mulberry(ci*7919+mem.el[ci][0].length)); return mem.tit[ci]; }
+function titOf(ci){ return GC.titulares(mem,ci); }
 // elenco principal em campo: titulares e reservas, cada um na sua posição
 function squadOf(ci){ const tit=titOf(ci).slice(), used=new Set(tit.filter(Boolean)), pool=mem.el[ci][0].filter(h=>!used.has(h)), res=FORM.map(()=>null);
   FORM.forEach((f,j)=>{ const k=pool.findIndex(h=>mem.byH.get(h).pos===f[0]); if(k>=0) res[j]=pool.splice(k,1)[0]; });
@@ -815,8 +816,7 @@ function renderPanel(){
       <div class="kv"><span>formação</span><b>4-3-3</b></div>
       <div class="kv"><span>reservas</span><b>${sq.res.filter(Boolean).length}</b></div>
       ${res?`<div class="pos"><div class="pl">no banco</div><div class="ch">${res}</div></div>`:""}
-      ${canSort()?`<button class="btn sm y" id="psort">🎲 sortear titulares</button>`:""}
-      <p class="note">Os titulares saem do elenco Principal. Antes de cada jogo do campeonato, o sorteio é refeito.</p>`;
+      <p class="note">Os 11 primeiros a entrar são os titulares (posição sorteada). Os próximos 11 são os reservas, e depois vêm o Sub-23, o Sub-20 e o Sub-17.</p>`;
   }
   panel.innerHTML=`
     <div class="ph">${FLAG(c.c1,26)}<h2>${esc(c.nome)}</h2><button class="circ" id="pclose" aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></div>
@@ -825,7 +825,7 @@ function renderPanel(){
     <div class="prog">${prog}<div class="pbar"><i style="width:${(curN/PER*100).toFixed(1)}%"></i></div></div>
     <div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="elenco" aria-selected="${tab==="elenco"}">Elenco</button><button class="tab" role="tab" data-tab="tit" aria-selected="${tab==="tit"}">Titulares</button></div>
     ${body}
-    <div class="kv"><span>capitão (1º a entrar)</span><b>${cap?"@"+esc(cap):"—"}</b></div>
+    <div class="kv"><span>capitão 👑 (1º a entrar)</span><b>${cap?"@"+esc(cap):"—"}</b></div>
     <div class="kv"><span>presidente do clube</span><b>eleição em breve</b></div>
     <div class="acts"><button class="btn y" id="pfly">ver no mapa</button><button class="btn" id="pjoin">${MODE==="demo"?"entrar no time":"como entrar"}</button></div>`;
   panel.hidden=false; bar.hidden=true;
@@ -869,7 +869,7 @@ async function adm(action,extra){
 function describe(r){
   if(!r) return ["bad","Comentário ignorado (@ inválido ou é uma resposta)."];
   const nome=i=>esc(clubs[i].nome);
-  if(r.kind==="ok") return ["ok",`<b>@${esc(r.user)}</b> entrou no <b>${nome(r.c)}</b> como <b>${POSN[r.pos]}</b> (${ELENCOS[r.e]}) ⚽`];
+  if(r.kind==="ok") return ["ok",`<b>@${esc(r.user)}</b> entrou no <b>${nome(r.c)}</b> como <b>${POSN[r.pos]} ${r.e===0?(r.tit?"titular":"reserva"):"("+ELENCOS[r.e]+")"}</b>${r.cap?" e é o capitão 👑":""} ⚽`];
   if(r.kind==="fila") return ["warn",`O ${nome(r.c)} está lotado (${CAP}/${CAP}). @${esc(r.user)} entrou na fila, posição ${r.n}.`];
   if(r.kind==="ja") return ["warn",`@${esc(r.user)} já joga no ${nome(r.c)} (${POSN[r.pos]}). Cada @ entra em um time só.`];
   if(r.kind==="filaja") return ["warn",`@${esc(r.user)} já está na fila do ${nome(r.c)}.`];
@@ -955,7 +955,7 @@ async function renderAdmin(){
     </div>
     <div class="sec"><h4>⚽ Jogadores</h4>
       <label class="fld" for="ar">tirar um @ do jogo (o 1º da fila entra no lugar)<input id="ar" placeholder="@usuario"></label>
-      <div class="acts"><button class="btn sm" id="arem">tirar do jogo</button><button class="btn sm" id="asortall">🎲 sortear titulares de todos</button></div>
+      <div class="acts"><button class="btn sm" id="arem">tirar do jogo</button></div>
       <div id="ares3" class="res" hidden></div>
     </div>
     <div class="sec"><h4>💾 Dados</h4>
@@ -972,7 +972,6 @@ async function renderAdmin(){
   $("acfg").onclick=()=>run("acfg","ares1",async()=>{ await adm("settings",{gameTag:$("atag").value,autoReply:$("aauto").checked}); showRes($("ares1"),"ok","Configurações salvas."); });
   $("atest").onclick=()=>run("atest","ares2",async()=>{ const h=cleanH($("au").value); if(!GC.validH(h)) throw new Error("Coloque um @ válido."); const j=await adm("test",{user:h,text:$("at").value}); const d=describe(j.res); showRes($("ares2"),d[0],d[1]); if(j.res&&j.res.kind==="ok") openClub(j.res.c,true,h); });
   $("arem").onclick=()=>run("arem","ares3",async()=>{ const h=cleanH($("ar").value); const j=await adm("remove",{user:h}); const r=j.res; showRes($("ares3"),r&&r.st!=="nao"?"ok":"warn",r&&r.st==="ok"?`@${esc(h)} saiu do jogo.${r.promoted?` @${esc(r.promoted)} saiu da fila e entrou no lugar.`:""}`:r&&r.st==="fila"?`@${esc(h)} saiu da fila.`:`@${esc(h)} não está no jogo.`); });
-  $("asortall").onclick=()=>run("asortall","ares3",async()=>{ const j=await adm("sortearTodos"); showRes($("ares3"),"ok",`Titulares sorteados em ${fmt(j.res.times)} times.`); });
   $("aback").onclick=()=>run("aback","ares4",async()=>{ const j=await adm("backup"); const blob=new Blob([JSON.stringify(j)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`clube-dos-seguidores-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); showRes($("ares4"),"ok","Backup baixado."); });
   $("afile").onchange=e=>run("aback","ares4",async()=>{ const f=e.target.files[0]; if(!f) return; const d=JSON.parse(await f.text()); const j=await adm("restore",{state:d.state,cfg:d.cfg}); showRes($("ares4"),"ok",`Backup restaurado: ${fmt(j.res.jogadores)} jogadores.`); e.target.value=""; });
   $("azero").onclick=()=>$("aconf").hidden=false;
@@ -1030,9 +1029,19 @@ function loop(now){
   renderer.render(scene,camera);
 }
 $("loading").remove();
-requestAnimationFrame(loop);
-boot();
-setTimeout(()=>toast(`Toque num estádio pra ver o elenco · comente o time no vídeo pra entrar`,5200),600);
+const VIDEO=/[?&]video\b/.test(location.search);
+if(VIDEO){
+  // modo gerador de vídeo: o video.js controla câmera, dados e quadros
+  MODE="video"; document.body.classList.add("video");
+  addExamples(2600,mulberry(7)); rank(); refreshLabels();
+  window.__W={THREE,scene,camera,renderer,controls,sun,clubs,GC,FORM,ELENCOS,POSN,B,H,PITCH_Y,LABEL_Y,minX,maxX,minY,maxY,proj,
+    getMem:()=>mem, setMem:m=>{ mem=m; rank(); }, animateWorld, refreshPitchPlayers, setSelected:i=>{ selected=i; }, players:()=>PLAYERS, total, mulberry};
+  const sc=document.createElement("script"); sc.src="video.js?v=1"; document.body.appendChild(sc);
+} else {
+  requestAnimationFrame(loop);
+  boot();
+  setTimeout(()=>toast(`Toque num estádio pra ver o elenco · comente o time no vídeo pra entrar`,5200),600);
+}
 })();
 </script>
 </body>

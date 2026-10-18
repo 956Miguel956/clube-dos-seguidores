@@ -88,9 +88,21 @@ function freeSlots(mem, ci, e) {
   const used = {}; mem.el[ci][e].forEach(h => { const p = mem.byH.get(h).pos; used[p] = (used[p] || 0) + 1; });
   const out = []; for (const k in SLOTS) for (let j = used[k] || 0; j < SLOTS[k]; j++) out.push(k); return out;
 }
+// posições de titular (4-3-3) que ainda faltam no Principal
+function titularNeeds(mem, ci) {
+  const need = {}; FORM.forEach(f => need[f[0]] = (need[f[0]] || 0) + 1);
+  mem.el[ci][0].forEach(h => { const p = mem.byH.get(h).pos; if (need[p] > 0) need[p]--; });
+  const out = []; for (const k in need) for (let j = 0; j < need[k]; j++) out.push(k); return out;
+}
+// titulares: em cada posição do 4-3-3, quem entrou primeiro
+function titulares(mem, ci) {
+  const used = new Set(), list = mem.el[ci][0];
+  return FORM.map(f => { const h = list.find(x => !used.has(x) && mem.byH.get(x).pos === f[0]); if (h) { used.add(h); return h; } return null; });
+}
 function place(mem, h, ci, ex, rnd) {
   for (let e = 0; e < ELENCOS.length; e++) {
-    const fs = freeSlots(mem, ci, e);
+    let fs = freeSlots(mem, ci, e);
+    if (e === 0) { const tn = titularNeeds(mem, ci); if (tn.length) fs = tn; } // os 11 primeiros viram titulares
     if (fs.length) { const pos = fs[Math.floor(rnd() * fs.length)]; const r = { h, c: ci, e, pos }; if (ex) r.ex = 1; mem.byH.set(h, r); mem.el[ci][e].push(h); mem.seq++; return r; }
   }
   return null;
@@ -146,14 +158,15 @@ function processComment(mem, ev, rnd) {
   if (!fc) return { user: h, kind: "semTime" };
   if (fc.amb) return { user: h, kind: "amb", amb: fc.amb };
   const r = join(mem, h, fc.ci, false, rnd);
-  if (r.st === "ok") return { user: h, kind: "ok", c: r.c, e: r.e, pos: r.pos };
+  if (r.st === "ok") { const tit = r.e === 0 && titulares(mem, r.c).includes(h); return { user: h, kind: "ok", c: r.c, e: r.e, pos: r.pos, tit, cap: mem.el[r.c][0][0] === h }; }
   return { user: h, kind: "fila", c: r.c, n: r.n };
 }
 function replyText(R, site) {
   setup();
   const link = site ? " " + site.replace(/\/$/, "") : "";
   const nome = i => CLUBS[i].nome;
-  if (R.kind === "ok") return `⚽ @${R.user}, agora você é ${POSN[R.pos]} do ${nome(R.c)} (${ELENCOS[R.e]})! Seu @ já está no estádio:${link}`;
+  if (R.kind === "ok") { const onde = R.e === 0 ? (R.tit ? "TITULAR" : "reserva") : "do " + ELENCOS[R.e];
+    return `⚽ @${R.user}, agora você é ${POSN[R.pos]} ${onde} do ${nome(R.c)}!${R.cap ? " E é o CAPITÃO do time 👑" : ""} Segue @joguenoseutime pros campeonatos. Seu @ já está no estádio:${link}`; }
   if (R.kind === "fila") return `😱 O ${nome(R.c)} lotou! @${R.user}, você é o nº ${R.n} da fila de espera. Quando abrir vaga, você entra.`;
   if (R.kind === "semTime") return `🤔 @${R.user}, não achei seu time. Comente só o nome dele, tipo "Galo", "Flamengo" ou "Ipatinga".`;
   if (R.kind === "amb") return `@${R.user}, qual deles? ${R.amb.slice(0, 4).map(nome).join(", ")}. Comente o nome completo 😉`;
@@ -165,5 +178,5 @@ function isGameCaption(settings, caption) {
   return norm(caption).includes(" " + tag + " ");
 }
 
-root.GameCore = { ELENCOS, SLOTS, POSN, POSP, PER, CAP, FORM, norm, nt, cleanH, validH, clubs, findClub, newState, decode, encode, total, openEl, freeSlots, join, remove, sortear, titValid, processComment, replyText, isGameCaption };
+root.GameCore = { ELENCOS, SLOTS, POSN, POSP, PER, CAP, FORM, norm, nt, cleanH, validH, clubs, findClub, newState, decode, encode, total, openEl, freeSlots, join, remove, sortear, titValid, titulares, titularNeeds, processComment, replyText, isGameCaption };
 })(typeof window !== "undefined" ? window : globalThis);
