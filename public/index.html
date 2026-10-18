@@ -1,0 +1,763 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Comente seu time no vídeo e vire jogador no mapa do Brasil.">
+<title>Clube dos Seguidores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap">
+<style>
+html,body{margin:0}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+
+/* Layout: mapa 3D em tela cheia; busca no topo, zoom à direita, contador + card do clube no canto inferior esquerdo */
+:root{
+  --ink:#1c2230; --sun:#ffc83d; --sun-d:#e3a90f; --paper:#ffffff; --chip:#f0f2f7;
+  --mut:#687088; --gold:#b27900; --sky:#bfe6fb; --grass:#6fb64c; --ok:#1f9d55; --bad:#d6453d;
+  --f:"Nunito",ui-rounded,"Segoe UI",system-ui,sans-serif;
+  --ts:2px 0 0 var(--ink),-2px 0 0 var(--ink),0 2px 0 var(--ink),0 -2px 0 var(--ink),1.5px 1.5px 0 var(--ink),-1.5px 1.5px 0 var(--ink),1.5px -1.5px 0 var(--ink),-1.5px -1.5px 0 var(--ink),0 3px 0 var(--ink);
+  --tsl:3px 0 0 var(--ink),-3px 0 0 var(--ink),0 3px 0 var(--ink),0 -3px 0 var(--ink),2.2px 2.2px 0 var(--ink),-2.2px 2.2px 0 var(--ink),2.2px -2.2px 0 var(--ink),-2.2px -2.2px 0 var(--ink),0 5px 0 var(--ink);
+  color-scheme:light;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--sky);color:var(--ink);font-family:var(--f);font-weight:800;-webkit-tap-highlight-color:transparent}
+#cv{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;text-align:center;white-space:nowrap;color:#fff;text-shadow:var(--ts);line-height:1.08;pointer-events:auto;cursor:pointer;will-change:transform}
+.lbl b{display:block;font-weight:900;font-size:15px}
+.lbl small{display:block;font-weight:900;font-size:11px}
+.lbl .cap{display:inline-flex;align-items:center;gap:3px;color:var(--sun);font-size:11.5px;font-weight:900}
+.lbl.t1 b{font-size:17px}
+.lbl.sel b{color:var(--sun)}
+.uf{position:absolute;left:0;top:0;color:rgba(255,255,255,.6);font-weight:900;font-size:22px;text-shadow:0 2px 0 rgba(28,34,48,.25);white-space:nowrap;pointer-events:none}
+.pchip{position:absolute;left:0;top:0;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:900;white-space:nowrap;color:var(--ink)}
+.pchip i{font-style:normal;color:var(--mut);margin-right:4px}
+.pchip.gk{background:var(--sun)}
+
+#top{position:fixed;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;padding-inline:16px}
+#top h1{margin:0;font-size:clamp(26px,4.4vw,40px);font-weight:900;color:#fff;text-shadow:var(--tsl);letter-spacing:-.5px;text-wrap:balance}
+#top h1 span{color:var(--sun)}
+.srch{display:flex;gap:8px;pointer-events:auto;width:min(440px,100%)}
+.srch .box{flex:1;min-width:0;display:flex;align-items:center;gap:6px;background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:0 14px;box-shadow:0 4px 0 var(--ink)}
+.srch .box span{color:var(--mut);font-weight:900;font-size:18px}
+.srch input{flex:1;min-width:0;border:0;outline:0;font:800 16px var(--f);color:var(--ink);background:transparent;padding:10px 0}
+.srch input::placeholder{color:#9aa1b3}
+.btn{font:900 15px var(--f);color:var(--ink);background:var(--paper);border:3px solid var(--ink);border-radius:999px;padding:9px 18px;box-shadow:0 4px 0 var(--ink);cursor:pointer;white-space:nowrap;transition:transform .08s, box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.btn:focus-visible,.circ:focus-visible,.tab:focus-visible,.elc:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.btn.y{background:var(--sun)}
+.btn.sm{font-size:13px;padding:6px 13px;border-width:2.5px;box-shadow:0 3px 0 var(--ink)}
+.btn.red{background:var(--bad);color:#fff}
+#toast{pointer-events:auto;background:var(--paper);border:3px solid var(--ink);border-radius:16px;padding:8px 14px;font-size:14px;box-shadow:0 4px 0 var(--ink);max-width:min(440px,100%);text-align:center}
+#toast b{color:var(--gold)}
+
+#zoom{position:fixed;right:calc(env(safe-area-inset-right,0px) + 14px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px}
+.circ{width:46px;height:46px;border-radius:50%;background:var(--paper);border:3px solid var(--ink);box-shadow:0 3px 0 var(--ink);display:grid;place-items:center;cursor:pointer;padding:0}
+.circ svg{width:20px;height:20px}
+
+#bar{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);display:flex;flex-direction:column;gap:8px;max-width:calc(100% - 90px)}
+#count{font-size:19px;font-weight:900;color:#fff;text-shadow:var(--ts)}
+#count .ex{display:block;font-size:12px;color:var(--sun)}
+#bar .row{display:flex;gap:8px;flex-wrap:wrap}
+
+#panel{position:fixed;left:calc(env(safe-area-inset-left,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 14px);width:min(410px,calc(100% - 28px));max-height:calc(100% - 150px);overflow:auto;background:var(--paper);border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+#panel h2{margin:0;font-size:25px;font-weight:900;line-height:1.05;min-width:0;text-wrap:balance}
+.ph{display:flex;align-items:center;gap:10px}
+.ph svg{flex:none}
+.ph .circ{margin-left:auto;width:40px;height:40px;flex:none}
+.sub{display:flex;align-items:center;gap:8px;flex-wrap:wrap;color:var(--mut);font-size:14px}
+.ufc{background:#a99af2;color:var(--ink);border:2px solid var(--ink);border-radius:8px;padding:0 6px;font-size:12px;font-weight:900}
+.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.tile{border:2.5px solid var(--ink);border-radius:13px;padding:6px 4px;text-align:center;background:var(--chip)}
+.tile b{display:block;font-size:19px;font-weight:900;font-variant-numeric:tabular-nums;line-height:1.1}
+.tile span{font-size:11px;color:var(--mut)}
+.prog{font-size:13px}
+.prog em{font-style:normal;color:var(--gold)}
+.pbar{height:12px;border:2.5px solid var(--ink);border-radius:999px;overflow:hidden;background:var(--paper);margin-top:5px}
+.pbar i{display:block;height:100%;background:var(--sun);border-right:2.5px solid var(--ink)}
+.tabs{display:flex;gap:6px;border-bottom:2.5px solid var(--chip);padding-bottom:6px}
+.tab{font:900 14px var(--f);background:transparent;border:0;padding:4px 10px;border-radius:999px;color:var(--mut);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:#fff}
+.els{display:flex;gap:6px;flex-wrap:wrap}
+.elc{font:900 12px var(--f);border:2px solid var(--ink);background:var(--paper);border-radius:999px;padding:3px 9px;cursor:pointer;color:var(--ink)}
+.elc[aria-pressed="true"]{background:var(--sun)}
+.elc small{color:var(--mut);font-weight:800}
+.pos{display:grid;grid-template-columns:86px 1fr;gap:6px 8px;align-items:start;font-size:12.5px}
+.pos .pl{color:var(--mut);padding-top:3px}
+.pos .ch{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.hd{border:2px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--paper);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hd.v{border-style:dashed;color:#9aa1b3;border-color:#b8bdca}
+.hd.hl{background:var(--sun)}
+.mini{position:relative;aspect-ratio:16/10;max-width:100%;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(90deg,#62b148 0 10%,#57a63f 10% 20%)}
+.mini::before{content:"";position:absolute;inset:7%;border:2px solid rgba(255,255,255,.85);border-radius:2px}
+.mini::after{content:"";position:absolute;left:50%;top:7%;bottom:7%;border-left:2px solid rgba(255,255,255,.85)}
+.mk{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;z-index:1}
+.mk i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:var(--c1,#fff)}
+.mk span{background:var(--paper);border:1.5px solid var(--ink);border-radius:999px;font-size:9.5px;padding:0 5px;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk.v span{color:#9aa1b3}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--mut)}
+.kv b{color:var(--ink);font-weight:900;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.acts{display:flex;gap:8px}
+.acts .btn{flex:1}
+.note{font-size:12px;color:var(--mut);line-height:1.35}
+
+.modal{position:fixed;inset:0;background:rgba(28,34,48,.45);display:grid;place-items:center;padding:16px;z-index:20}
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:24px;box-shadow:0 6px 0 var(--ink);width:min(470px,100%);max-height:calc(100% - 20px);overflow:auto;padding:16px 18px 18px;display:flex;flex-direction:column;gap:12px}
+.card h3{margin:0;font-size:22px;font-weight:900;display:flex;align-items:center;gap:8px}
+.card h3 .circ{margin-left:auto;width:38px;height:38px}
+.fld{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+.fld input,.fld textarea{font:800 15px var(--f);color:var(--ink);border:2.5px solid var(--ink);border-radius:14px;padding:9px 12px;background:var(--paper);resize:vertical}
+.res{border-radius:14px;padding:9px 12px;font-size:14px;background:var(--chip);border:2.5px solid var(--ink)}
+.res.ok{background:#d9f4e2}.res.bad{background:#fde0dd}.res.warn{background:#fff1c6}
+.hr{height:2.5px;background:var(--chip);border:0;margin:2px 0}
+.rk{display:grid;grid-template-columns:28px 14px 1fr auto;gap:8px;align-items:center;font-size:14px;cursor:pointer;padding:3px 4px;border-radius:10px}
+.rk:hover{background:var(--chip)}
+.rk .n{color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.rk .dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink)}
+.rk .v{font-variant-numeric:tabular-nums}
+.rk .v small{color:var(--mut)}
+.help p{margin:0;font-size:14px;line-height:1.45;font-weight:700}
+.help ol{margin:0;padding-left:20px;font-size:14px;line-height:1.5;font-weight:700;display:flex;flex-direction:column;gap:4px}
+#loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--sky);z-index:30;font-size:22px;font-weight:900;color:#fff;text-shadow:var(--ts)}
+
+@media (max-width:600px){
+  #top h1{font-size:26px}
+  .srch input{font-size:15px;padding:8px 0}
+  .btn{padding:7px 14px;font-size:14px}
+  #zoom{top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);transform:none;right:calc(env(safe-area-inset-right,0px) + 10px)}
+  .circ{width:40px;height:40px}
+  #panel{left:0;right:0;bottom:0;width:auto;border-radius:22px 22px 0 0;border-bottom:0;max-height:62%;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 14px);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .tile b{font-size:17px}
+  #count{font-size:16px}
+}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+
+.sec{display:flex;flex-direction:column;gap:8px;border:2.5px solid var(--chip);border-radius:16px;padding:10px 12px}
+.sec h4{margin:0;font-size:16px;font-weight:900}
+.chk{display:flex;align-items:center;gap:8px;font-size:13.5px}
+.chk input{width:18px;height:18px;accent-color:var(--ink)}
+label.btn{display:inline-flex;align-items:center;justify-content:center}
+.btn:disabled{opacity:.55;cursor:wait}
+body[data-mode="servidor"] #bjoin{display:none}
+#badmin{width:36px;height:36px;border-width:2.5px}
+#badmin svg{width:18px;height:18px}
+.legal{font-size:11px;color:#fff;text-shadow:var(--ts)}
+.legal a{color:#fff}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="Mapa 3D do Brasil com os estádios dos times"></canvas>
+<div id="labels"></div>
+<div id="loading">montando o Brasil…</div>
+
+<header id="top">
+  <h1>ache seu <span>time</span></h1>
+  <form class="srch" id="sform" autocomplete="off">
+    <label class="box"><span>@</span><input id="q" placeholder="@, time, cidade ou estado" aria-label="Buscar @, time, cidade ou estado"></label>
+    <button class="btn y" type="submit">achar</button>
+  </form>
+  <div id="toast" hidden></div>
+</header>
+
+<nav id="zoom" aria-label="Zoom">
+  <button class="circ" id="zin" aria-label="Aproximar"><svg viewBox="0 0 20 20"><path d="M10 3v14M3 10h14" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button>
+  <button class="circ" id="zout" aria-label="Afastar"><svg viewBox="0 0 20 20"><path d="M3 10h14" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button>
+  <button class="circ" id="zall" aria-label="Ver o Brasil inteiro"><svg viewBox="0 0 20 20" fill="none" stroke="#1c2230" stroke-width="2.6" stroke-linecap="round"><path d="M3 7V3h4M13 3h4v4M17 13v4h-4M7 17H3v-4"/></svg></button>
+</nav>
+
+<footer id="bar">
+  <div id="count"></div>
+  <div class="row">
+    <button class="btn y sm" id="bjoin">💬 simular comentário</button>
+    <button class="btn sm" id="brank">🏆 ranking</button>
+    <button class="btn sm" id="bhelp">como entrar</button>
+    <button class="circ" id="badmin" aria-label="Painel do criador"><svg viewBox="0 0 20 20" fill="none" stroke="#1c2230" stroke-width="2.2"><circle cx="10" cy="10" r="3"/><path d="M10 1.8v2.6M10 15.6v2.6M1.8 10h2.6M15.6 10h2.6M4.2 4.2l1.8 1.8M14 14l1.8 1.8M4.2 15.8 6 14M14 6l1.8-1.8" stroke-linecap="round"/></svg></button>
+  </div>
+  <div class="legal"><a href="/privacidade.html">privacidade</a> · <a href="/exclusao-de-dados.html">excluir meus dados</a></div>
+</footer>
+
+<section id="panel" hidden aria-live="polite"></section>
+
+<div class="modal" id="mjoin" hidden>
+  <div class="card" role="dialog" aria-labelledby="tj">
+    <h3 id="tj">Simular comentário <button class="circ" data-close aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></h3>
+    <p class="note">Modo de teste: tudo fica salvo só neste navegador. No site publicado, os comentários do Instagram entram sozinhos.</p>
+    <label class="fld" for="ju">@ de quem comentou<input id="ju" placeholder="@seu_usuario"></label>
+    <label class="fld" for="jt">comentário<textarea id="jt" rows="2" placeholder="ex: GALOOO 🐔 atlético mineiro"></textarea></label>
+    <button class="btn y" id="jgo">comentar</button>
+    <div id="jres" class="res" hidden></div>
+    <hr class="hr">
+    <div class="fld">teste de carga (comentários aleatórios de exemplo)
+      <div class="acts"><button class="btn sm" data-bulk="100">+100</button><button class="btn sm" data-bulk="1000">+1.000</button><button class="btn sm" data-bulk="5000">+5.000</button></div>
+    </div>
+    <div class="acts"><button class="btn sm" id="jclr">apagar exemplos</button><button class="btn sm" id="jzero">zerar tudo</button></div>
+    <div id="jconf" class="res warn" hidden>Isso apaga todos os jogadores e a fila. <div class="acts" style="margin-top:8px"><button class="btn sm red" id="jzok">sim, zerar</button><button class="btn sm" id="jzno">cancelar</button></div></div>
+  </div>
+</div>
+
+<div class="modal" id="madmin" hidden>
+  <div class="card" role="dialog" aria-labelledby="ta">
+    <h3 id="ta">Painel do criador <button class="circ" data-close aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></h3>
+    <div id="abody" style="display:flex;flex-direction:column;gap:12px"></div>
+  </div>
+</div>
+
+<div class="modal" id="mrank" hidden>
+  <div class="card" role="dialog" aria-labelledby="tr">
+    <h3 id="tr">Ranking dos times <button class="circ" data-close aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></h3>
+    <div class="els" id="rkf"></div>
+    <div id="rkl"></div>
+  </div>
+</div>
+
+<div class="modal" id="mhelp" hidden>
+  <div class="card help" role="dialog" aria-labelledby="th">
+    <h3 id="th">Como entrar <button class="circ" data-close aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></h3>
+    <ol>
+      <li>Comente <b>"<span id="hjoin">Galo</span>"</b> (ou o nome do seu time) no vídeo do jogo em <b>@omiguelmeirelles</b>. Vale apelido: "mengão", "timão", "verdão"…</li>
+      <li>Você vira jogador do time com uma <b>posição sorteada</b> e seu @ aparece no estádio em até 1 minuto.</li>
+      <li>Cada time tem 4 elencos de 22: <b>Principal, Sub-23, Sub-20 e Sub-17</b> (88 vagas). Quando lota, você entra na fila.</li>
+      <li>Antes de cada jogo os <b>titulares são sorteados</b>; o resto fica no banco.</li>
+      <li>Cada @ joga em <b>um time só</b>.</li>
+      <li>Em breve: o mega campeonato entre todos os times do mapa.</li>
+    </ol>
+    <p class="note">No mapa: arraste para mover, gire com o botão direito (ou dois dedos) e toque num estádio para ver o elenco.</p>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="times.js"></script>
+<script src="core.js"></script>
+<script>
+(function(){
+"use strict";
+/* ================= CONFIG ================= */
+const GC=window.GameCore;
+const {ELENCOS,SLOTS,POSN,POSP,PER,CAP,FORM}=GC;
+const DEMO_KEY="clube-dos-seguidores-demo-v1";
+const K=30, LON0=-52, LAT0=-14, COS=Math.cos(15*Math.PI/180), H=1.5;
+const proj=(lat,lon)=>({x:(lon-LON0)*K*COS, y:(lat-LAT0)*K});
+
+/* contorno aproximado do Brasil [lon,lat] */
+const OUT=[[-51.6,4.4],[-51.0,3.9],[-50.5,2.0],[-50.0,1.7],[-49.9,1.0],[-50.4,0.2],[-48.5,-0.7],[-47.9,-0.6],[-46.5,-1.0],[-44.8,-1.6],[-44.3,-2.5],[-43.4,-2.4],[-41.8,-2.9],[-40.0,-2.8],[-38.5,-3.7],[-37.2,-4.8],[-36.0,-5.1],[-35.2,-5.4],[-34.8,-7.2],[-35.0,-8.5],[-35.7,-9.6],[-36.6,-10.6],[-37.3,-11.6],[-38.3,-12.9],[-39.0,-13.6],[-39.0,-15.5],[-39.2,-17.4],[-39.7,-19.0],[-40.3,-20.3],[-40.9,-21.5],[-41.9,-22.4],[-43.1,-23.0],[-44.6,-23.3],[-45.7,-23.8],[-46.9,-24.4],[-48.0,-25.3],[-48.6,-26.3],[-48.6,-27.4],[-48.8,-28.5],[-49.7,-29.4],[-50.4,-30.5],[-51.2,-31.6],[-52.3,-32.5],[-53.4,-33.7],[-53.5,-33.0],[-53.2,-32.4],[-53.8,-31.7],[-55.3,-30.9],[-56.0,-30.2],[-57.6,-30.2],[-56.8,-29.2],[-55.7,-28.2],[-54.4,-27.3],[-53.8,-26.6],[-54.6,-25.6],[-54.3,-24.0],[-55.4,-23.9],[-55.8,-22.3],[-57.8,-22.1],[-58.0,-20.2],[-57.9,-19.0],[-58.4,-17.3],[-60.2,-16.3],[-60.4,-15.1],[-60.6,-13.7],[-62.0,-13.0],[-63.6,-12.5],[-65.0,-11.9],[-65.4,-10.4],[-66.6,-9.9],[-68.5,-11.0],[-70.5,-11.0],[-70.6,-9.6],[-72.2,-10.0],[-73.4,-9.5],[-74.0,-7.6],[-73.0,-5.4],[-70.0,-4.3],[-69.5,-1.1],[-69.9,1.0],[-67.2,2.0],[-66.9,1.2],[-65.4,0.9],[-64.0,1.9],[-63.4,2.2],[-64.0,2.9],[-64.6,4.2],[-62.8,4.0],[-61.3,4.5],[-60.0,5.2],[-59.6,4.3],[-59.8,2.8],[-59.0,1.4],[-57.4,1.8],[-56.0,1.9],[-55.0,2.5],[-54.0,2.2],[-52.9,2.2]];
+const RIVERS=[
+ [[-73,-4],[-70,-4.2],[-65,-3.5],[-60,-3.2],[-56,-2.5],[-52,-1.5],[-50.2,-0.6]],
+ [[-46,-20.2],[-45,-18],[-44.3,-16],[-43.5,-13],[-42,-10.5],[-40.5,-9.4],[-38.3,-9.6],[-36.4,-10.5]],
+ [[-51,-20],[-52.5,-22],[-54,-24],[-54.6,-25.6]],
+ [[-46.6,-23.5],[-48,-22.7],[-50,-21.5],[-51.3,-20.7]],
+ [[-49,-15],[-48.5,-10],[-48.2,-6],[-49.2,-3],[-49.5,-1.5]],
+ [[-52.5,-17],[-50.5,-12],[-49.5,-8],[-48.3,-5.5]],
+ [[-65,-10.5],[-63.9,-8.8],[-61,-6],[-59,-3.4]],
+ [[-67,1],[-64,-0.5],[-61,-2],[-60,-3.1]],
+ [[-53,-12],[-52.5,-7],[-52.2,-3],[-51.8,-1.5]],
+ [[-57.5,-8],[-56,-5],[-55,-2.5]],
+ [[-44.5,-21.8],[-47,-20.2],[-49,-19.9],[-51,-20]],
+ [[-57.5,-16.5],[-57.6,-19],[-57.8,-22]],
+ [[-53.5,-27.2],[-55,-28.2],[-56.8,-29.6],[-57.6,-30.2]]
+];
+
+/* ================= DADOS ================= */
+const clubs=GC.clubs().map(c=>Object.assign({},c,{x:0,z:0}));
+const findClub=GC.findClub, nt=GC.nt, cleanH=GC.cleanH;
+let mem=GC.decode(GC.newState());
+let MODE="carregando"; // "servidor" (site publicado) ou "demo" (prévia, salva no navegador)
+let REV=-1;
+const total=c=>GC.total(mem,c.i);
+const openEl=c=>GC.openEl(mem,c.i);
+
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+// titulares: os sorteados pelo servidor; se ainda não houve sorteio, um sorteio fixo por time (todo mundo vê igual)
+function titOf(ci){ if(!GC.titValid(mem,ci)) GC.sortear(mem,ci,mulberry(ci*7919+mem.el[ci][0].length)); return mem.tit[ci]; }
+
+/* modo demo: exemplos para o mapa não começar vazio */
+const N1="gabriel lucas pedro joao matheus gustavo rafael felipe bruno vinicius kaua davi miguel arthur heitor theo enzo bernardo samuel guilherme leo vitor caio igor diego thiago wesley ryan nicolas murilo ana julia maria beatriz larissa camila amanda leticia bianca sophia alice laura manuela giovanna isabela luana yasmin rebeca clara helena vitoria".split(" ");
+const N2="silva santos oliveira souza lima costa pereira ferreira alves rodrigues gomes martins araujo ribeiro carvalho rocha melo barbosa dias nunes moreira cardoso teixeira mendes castro pinto freitas lopes vieira".split(" ");
+const W=c=>[0,10,4.5,1.6,0.55][c.tier];
+function exampleHandle(r){ const a=N1[Math.floor(r()*N1.length)], b=N2[Math.floor(r()*N2.length)], n=Math.floor(r()*9999); switch(Math.floor(r()*6)){case 0:return a+"."+b;case 1:return a+b+n;case 2:return a+"_"+n;case 3:return a+"."+b+"_"+(n%100);case 4:return "_"+a+b.slice(0,3)+(n%1000);default:return a+"zin"+(n%100);} }
+const WSUM=clubs.reduce((s,c)=>s+W(c),0);
+function pickWeighted(r){ let x=r()*WSUM; for(const c of clubs){ x-=W(c); if(x<=0) return c.i; } return clubs.length-1; }
+const exRng=mulberry(Date.now()%100000);
+function addExamples(n,rng){ rng=rng||exRng; let added=0,tries=0; while(added<n&&tries<n*4){ tries++; const h=exampleHandle(rng); if(mem.byH.has(h)||mem.fila.some(x=>x.h===h)) continue; GC.join(mem,h,pickWeighted(rng),true,rng); added++; } saveDemo(); }
+function clearExamples(){ mem.byH.forEach((r,h)=>{ if(r.ex) mem.byH.delete(h); }); mem.fila=mem.fila.filter(x=>!x.ex); mem.tit={}; mem=GC.decode(GC.encode(mem)); saveDemo(); }
+let saveT=0;
+function saveDemo(){ if(MODE!=="demo") return; clearTimeout(saveT); saveT=setTimeout(()=>{ try{ localStorage.setItem(DEMO_KEY,JSON.stringify(GC.encode(mem))); }catch(e){} },400); }
+function loadDemo(){ try{ const r=localStorage.getItem(DEMO_KEY); if(r){ mem=GC.decode(JSON.parse(r)); return true; } }catch(e){} return false; }
+
+let RANK=[], RBR={}, RUF={};
+function rank(){ RANK=clubs.slice().sort((a,b)=>total(b)-total(a)||a.tier-b.tier||a.nome.localeCompare(b.nome)); const uc={}; RANK.forEach((c,i)=>{RBR[c.i]=i+1; uc[c.uf]=(uc[c.uf]||0)+1; RUF[c.i]=uc[c.uf];}); }
+rank();
+
+/* ================= THREE ================= */
+const cv=document.getElementById("cv");
+const renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0xbfe6fb);
+scene.fog=new THREE.Fog(0xbfe6fb,700,2400);
+const camera=new THREE.PerspectiveCamera(42,1,0.8,6000);
+scene.add(new THREE.HemisphereLight(0xffffff,0x7a9a5a,0.78));
+const sun=new THREE.DirectionalLight(0xffffff,0.72); sun.position.set(-300,520,260); scene.add(sun);
+
+const controls=new THREE.MapControls(camera,cv);
+controls.enableDamping=true; controls.dampingFactor=0.09; controls.screenSpacePanning=false;
+controls.minDistance=5; controls.maxDistance=1500; controls.maxPolarAngle=1.18; controls.zoomSpeed=1.1;
+
+// terreno
+const PTS=OUT.map(p=>proj(p[1],p[0]));
+let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9; PTS.forEach(p=>{minX=Math.min(minX,p.x);maxX=Math.max(maxX,p.x);minY=Math.min(minY,p.y);maxY=Math.max(maxY,p.y);});
+const BW=maxX-minX, BH=maxY-minY;
+function inPoly(x,y){ let ins=false; for(let i=0,j=PTS.length-1;i<PTS.length;j=i++){ const a=PTS[i],b=PTS[j]; if(((a.y>y)!==(b.y>y))&&(x<(b.x-a.x)*(y-a.y)/(b.y-a.y)+a.x)) ins=!ins; } return ins; }
+
+function hash(x,y){ const s=Math.sin(x*127.1+y*311.7)*43758.5453; return s-Math.floor(s); }
+function vnoise(x,y){ const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi; const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf); const a=hash(xi,yi),b=hash(xi+1,yi),c=hash(xi,yi+1),d=hash(xi+1,yi+1); return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v; }
+function regionColor(lat,lon){
+  if(lat>-10.5&&lon<-47.5) return [78,152,62];          // amazônia
+  if(lon>-44.5&&lon<-36.3&&lat>-15&&lat<-3) return [176,190,100]; // sertão
+  if(lat<-16&&lat>-21.5&&lon<-55.2) return [128,186,96]; // pantanal
+  if(lat>-24&&lat<-8&&lon>-56&&lon<-41) return [150,188,84]; // cerrado
+  if(lat<-24) return [112,178,80];                        // sul
+  if(lon>-42.5&&lat<-12) return [100,170,72];             // mata atlântica
+  return [128,186,82];
+}
+function terrainTexture(){
+  const S=2048, cnv=document.createElement("canvas"); cnv.width=cnv.height=S; const g=cnv.getContext("2d");
+  const toC=(x,y)=>[(x-minX)/BW*S,(maxY-y)/BH*S];
+  const step=8;
+  for(let py=0;py<S;py+=step) for(let px=0;px<S;px+=step){
+    const x=minX+(px+4)/S*BW, y=maxY-(py+4)/S*BH, lon=x/(K*COS)+LON0, lat=y/K+LAT0;
+    const col=regionColor(lat,lon), n=vnoise(px/90,py/90)*0.6+vnoise(px/24,py/24)*0.4, k=0.86+n*0.26;
+    g.fillStyle=`rgb(${col[0]*k|0},${col[1]*k|0},${col[2]*k|0})`; g.fillRect(px,py,step,step);
+  }
+  const r=mulberry(77);
+  for(let i=0;i<26000;i++){ const px=r()*S,py=r()*S; g.fillStyle=r()<.7?"rgba(40,110,40,.55)":"rgba(230,240,190,.35)"; g.beginPath(); g.arc(px,py,1+r()*1.6,0,7); g.fill(); }
+  // rios
+  RIVERS.forEach(rv=>{ const path=()=>{ g.beginPath(); rv.forEach((p,i)=>{ const q=proj(p[1],p[0]), c=toC(q.x,q.y); i?g.lineTo(c[0],c[1]):g.moveTo(c[0],c[1]); }); };
+    g.lineJoin=g.lineCap="round"; path(); g.strokeStyle="#eaf7ff"; g.lineWidth=9; g.stroke(); path(); g.strokeStyle="#8fd1f2"; g.lineWidth=5.5; g.stroke(); });
+  // praia
+  g.beginPath(); PTS.forEach((p,i)=>{ const c=toC(p.x,p.y); i?g.lineTo(c[0],c[1]):g.moveTo(c[0],c[1]); }); g.closePath();
+  g.strokeStyle="#f4e5ac"; g.lineWidth=7; g.stroke();
+  const tex=new THREE.CanvasTexture(cnv); tex.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+  tex.repeat.set(1/BW,1/BH); tex.offset.set(-minX/BW,-minY/BH); return tex;
+}
+const shape=new THREE.Shape(); PTS.forEach((p,i)=>i?shape.lineTo(p.x,p.y):shape.moveTo(p.x,p.y));
+const tg=new THREE.ExtrudeGeometry(shape,{depth:H,bevelEnabled:false,steps:1}); tg.rotateX(-Math.PI/2);
+scene.add(new THREE.Mesh(tg,[new THREE.MeshLambertMaterial({map:terrainTexture()}),new THREE.MeshLambertMaterial({color:0xefdc9c})]));
+const water=new THREE.Mesh(new THREE.PlaneGeometry(9000,9000),new THREE.MeshLambertMaterial({color:0x92d3f3})); water.rotation.x=-Math.PI/2; water.position.y=0.15; scene.add(water);
+
+/* posição dos estádios, afastando quem está colado */
+clubs.forEach(c=>{ const p=proj(c.lat,c.lon); c.x=p.x; c.z=-p.y; c.ox=c.x; c.oz=c.z; });
+(function relax(){
+  const D=9.4, nb=clubs.map(a=>clubs.filter(b=>b!==a&&Math.hypot(a.x-b.x,a.z-b.z)<90));
+  for(let it=0;it<260;it++){ let moved=false;
+    clubs.forEach((a,ai)=>nb[ai].forEach(b=>{ if(b.i<a.i) return; let dx=b.x-a.x,dz=b.z-a.z,d=Math.hypot(dx,dz); if(d<D){ if(d<1e-3){dx=Math.cos(a.i);dz=Math.sin(a.i);d=1;} const m=(D-d)/2/d; a.x-=dx*m;a.z-=dz*m;b.x+=dx*m;b.z+=dz*m; moved=true; } }));
+    clubs.forEach(c=>{ let k=0; while(!inPoly(c.x,-c.z)&&k<60){ c.x+=( (BW/2+minX)-c.x)*0.03; c.z+=(-(BH/2+minY)-c.z)*0.03; k++; } });
+    if(!moved) break; }
+})();
+
+/* instâncias */
+const D3=new THREE.Object3D(), TMP=new THREE.Color();
+function IM(geo,mat,n){ const m=new THREE.InstancedMesh(geo,mat,n); m.frustumCulled=false; m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); scene.add(m); return m; }
+const lam=(c,extra)=>new THREE.MeshLambertMaterial(Object.assign({color:c},extra||{}));
+function setI(m,i,x,y,z,ry,sx,sy,sz){ D3.position.set(x,y,z); D3.rotation.set(0,ry||0,0); D3.scale.set(sx||1,sy||1,sz||1); D3.updateMatrix(); m.setMatrixAt(i,D3.matrix); }
+const N=clubs.length, B=H+0.12;
+
+const flatRing=(a,b,s)=>{ const g=new THREE.RingGeometry(a,b,s); g.rotateX(-Math.PI/2); return g; };
+const pad=IM(new THREE.CylinderGeometry(4.5,4.6,0.24,22),lam(0xdde1e7),N);
+const road=IM(flatRing(3.55,4.4,26),lam(0x5b636e),N);
+const dash=IM(flatRing(3.955,4.0,40),lam(0xf3f3f3),N);
+const bowl=IM(new THREE.CylinderGeometry(2.1,1.85,0.9,18),lam(0xffffff),N);
+const stands=IM(flatRing(1.33,2.1,18),lam(0xffffff),N);
+const roofG=new THREE.CylinderGeometry(2.16,2.16,0.16,18,1,true);
+const roof=IM(roofG,lam(0xffffff,{side:THREE.DoubleSide}),N);
+function pitchTex(){ const c=document.createElement("canvas"); c.width=256;c.height=152; const g=c.getContext("2d");
+  for(let i=0;i<10;i++){ g.fillStyle=i%2?"#58a840":"#63b44a"; g.fillRect(i*25.6,0,25.6,152);} g.strokeStyle="#fff"; g.lineWidth=4;
+  g.strokeRect(8,8,240,136); g.beginPath(); g.moveTo(128,8); g.lineTo(128,144); g.stroke(); g.beginPath(); g.arc(128,76,20,0,7); g.stroke();
+  g.strokeRect(8,42,34,68); g.strokeRect(214,42,34,68); return new THREE.CanvasTexture(c); }
+const pg=new THREE.PlaneGeometry(2.1,1.25); pg.rotateX(-Math.PI/2);
+const pitch=IM(pg,new THREE.MeshLambertMaterial({map:pitchTex()}),N);
+const tower=IM(new THREE.BoxGeometry(0.09,1.9,0.09),lam(0x8a919d),N*4);
+const lamp=IM(new THREE.BoxGeometry(0.44,0.22,0.08),lam(0xfff3b8,{emissive:0x5a5020}),N*4);
+const fanG=new THREE.BoxGeometry(0.17,0.3,0.17);
+const FANS=22, PARADE=10;
+const fans=IM(fanG,lam(0xffffff),N*FANS);
+const parade=IM(fanG,lam(0xffffff),N*PARADE);
+const pole=IM(new THREE.BoxGeometry(0.05,1.5,0.05),lam(0x3b414c),N*4);
+const clothG=new THREE.PlaneGeometry(0.72,0.46); clothG.translate(0.36,0,0);
+const cloth=IM(clothG,lam(0xffffff,{side:THREE.DoubleSide}),N*4);
+const busB=IM(new THREE.BoxGeometry(1.15,0.42,0.42),lam(0xffffff),N);
+const busS=IM(new THREE.BoxGeometry(1.16,0.1,0.43),lam(0xffffff),N);
+const busW=IM(new THREE.BoxGeometry(0.96,0.13,0.435),lam(0x26303d),N);
+
+const FAN_OFF=[]; { const r=mulberry(5); for(let j=0;j<FANS;j++){ const a=Math.PI/2+(r()-.5)*1.5, rr=2.45+r()*0.85; FAN_OFF.push([Math.cos(a)*rr,Math.sin(a)*rr,r()*6.3,r()<.5]); } }
+const PH=clubs.map(c=>hash(c.i,3)*6.28);
+
+function setColors(){
+  clubs.forEach(c=>{ const i=c.i, c1=new THREE.Color(c.c1), c2=new THREE.Color(c.c2);
+    bowl.setColorAt(i,c1); stands.setColorAt(i,c2); roof.setColorAt(i,c1.clone().multiplyScalar(0.8));
+    busB.setColorAt(i,c1); busS.setColorAt(i,c2);
+    for(let j=0;j<FANS;j++) fans.setColorAt(i*FANS+j,FAN_OFF[j][3]?c1:c2);
+    for(let j=0;j<PARADE;j++) parade.setColorAt(i*PARADE+j,j%2?c2:c1);
+    for(let j=0;j<4;j++) cloth.setColorAt(i*4+j,j%2?c2:c1);
+  });
+  [bowl,stands,roof,busB,busS,fans,parade,cloth].forEach(m=>m.instanceColor.needsUpdate=true);
+}
+function placeStatic(){
+  clubs.forEach(c=>{ const i=c.i,x=c.x,z=c.z;
+    setI(pad,i,x,H+0.0,z); setI(road,i,x,H+0.16,z); setI(dash,i,x,H+0.2,z);
+    setI(bowl,i,x,B+0.45,z,0,1,1,0.78); setI(stands,i,x,B+0.94,z,0,1,1,0.78); setI(roof,i,x,B+0.9,z,0,1,1,0.78);
+    setI(pitch,i,x,B+0.98,z);
+    [[1,1],[1,-1],[-1,1],[-1,-1]].forEach((s,j)=>{ const tx=x+s[0]*1.95, tz=z+s[1]*1.5; setI(tower,i*4+j,tx,B+0.95,tz); const ry=Math.atan2(s[1]*1.5,-s[0]*1.95)+Math.PI/2; setI(lamp,i*4+j,tx,B+1.9,tz,-Math.atan2(-s[1],-s[0])+Math.PI/2); });
+  });
+  [pad,road,dash,bowl,stands,roof,pitch,tower,lamp].forEach(m=>{m.instanceMatrix.needsUpdate=true; m.computeBoundingSphere&&m.computeBoundingSphere();});
+}
+function animClub(c,t){
+  const i=c.i,x=c.x,z=c.z,ph=PH[i];
+  for(let j=0;j<FANS;j++){ const o=FAN_OFF[j]; setI(fans,i*FANS+j,x+o[0],B+0.15+Math.abs(Math.sin(t*6+o[2]+ph))*0.13,z+o[1]); }
+  const A0=t*0.16+ph;
+  for(let j=0;j<PARADE;j++){ const a=A0+j*0.075, r=4.17+((j%2)?0.1:-0.1); setI(parade,i*PARADE+j,x+Math.cos(a)*r,B+0.15+Math.abs(Math.sin(t*7+j))*0.06,z+Math.sin(a)*r); }
+  // bandeiras: 2 na entrada + 2 na torcida que desfila
+  const wav=Math.sin(t*3+ph)*0.35;
+  [[ -0.75,2.95],[0.75,2.95]].forEach((p,j)=>{ setI(pole,i*4+j,x+p[0],B+0.75,z+p[1]); setI(cloth,i*4+j,x+p[0],B+1.27,z+p[1],wav+(j?0.2:-0.2)); });
+  [2,7].forEach((jj,k)=>{ const a=A0+jj*0.075, px=x+Math.cos(a)*4.17, pz=z+Math.sin(a)*4.17; setI(pole,i*4+2+k,px,B+0.9,pz); setI(cloth,i*4+2+k,px,B+1.42,pz,-a+Math.PI+wav); });
+  const ab=-t*0.33+ph*2, bx=x+Math.cos(ab)*3.78, bz=z+Math.sin(ab)*3.78, ry=Math.PI/2-ab;
+  setI(busB,i,bx,B+0.32,bz,ry); setI(busS,i,bx,B+0.2,bz,ry); setI(busW,i,bx,B+0.4,bz,ry);
+}
+setColors(); placeStatic(); clubs.forEach(c=>animClub(c,0));
+[fans,parade,pole,cloth,busB,busS,busW].forEach(m=>{m.instanceMatrix.needsUpdate=true; m.computeBoundingSphere&&m.computeBoundingSphere();});
+
+/* árvores */
+(function trees(){
+  const grid=new Set(); clubs.forEach(c=>{ for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++) grid.add(Math.floor(c.x/7+dx)+","+Math.floor(c.z/7+dz)); });
+  const r=mulberry(11), NT=7000, geo=new THREE.IcosahedronGeometry(0.85,0), m=IM(geo,lam(0xffffff),NT), trunk=IM(new THREE.BoxGeometry(0.16,0.6,0.16),lam(0x7a5a3a),NT);
+  const greens=[0x3f8f3a,0x4c9d3f,0x357f34,0x5aa846]; let n=0, guard=0;
+  while(n<NT&&guard<NT*6){ guard++; const x=minX+r()*BW, y=minY+r()*BH; if(!inPoly(x,y)) continue; const z=-y; if(grid.has(Math.floor(x/7)+","+Math.floor(z/7))) continue;
+    const lat=y/K+LAT0, lon=x/(K*COS)+LON0; const dense=(lat>-10.5&&lon<-47.5)?1:0.45; if(r()>dense) continue;
+    const s=0.6+r()*0.9; setI(m,n,x,H+0.55*s+0.4,z,r()*6,s,s*1.1,s); setI(trunk,n,x,H+0.3,z,0,1,s,1); m.setColorAt(n,TMP.setHex(greens[(r()*4)|0])); n++; }
+  m.count=n; trunk.count=n; m.instanceColor.needsUpdate=true; m.computeBoundingSphere(); trunk.computeBoundingSphere();
+})();
+
+/* nuvens */
+const clouds=new THREE.Group(); scene.add(clouds);
+(function(){ const r=mulberry(9), mat=new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.92}), g=new THREE.IcosahedronGeometry(1,1);
+  for(let i=0;i<16;i++){ const grp=new THREE.Group(); const n=3+(r()*3|0); for(let j=0;j<n;j++){ const s=new THREE.Mesh(g,mat); const k=14+r()*12; s.scale.set(k*1.4,k*0.7,k); s.position.set(j*k*1.1,r()*5,(r()-.5)*k); grp.add(s);} grp.position.set(minX+r()*BW,190+r()*60,-(minY+r()*BH)); grp.userData.v=1+r()*1.5; clouds.add(grp);} })();
+
+/* jogadores no gramado do clube aberto */
+const pl=IM(new THREE.BoxGeometry(0.1,0.24,0.1),lam(0xffffff),11); pl.setColorAt(0,new THREE.Color(0xffffff)); pl.count=0;
+
+/* ================= RÓTULOS ================= */
+const LBL=document.getElementById("labels");
+const FLAG=(c,w)=>`<svg viewBox="0 0 12 14" width="${w||11}" height="${(w||11)*1.17}" aria-hidden="true"><path d="M1.5 1v12" stroke="#1c2230" stroke-width="2" stroke-linecap="round"/><path d="M2.5 1.6h8l-2 2.6 2 2.6h-8z" fill="${c||"#e8413a"}" stroke="#1c2230" stroke-width="1.1" stroke-linejoin="round"/></svg>`;
+const esc=s=>String(s).replace(/[&<>"]/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[m]));
+const fmt=n=>n.toLocaleString("pt-BR");
+const labels=clubs.map(c=>{ const d=document.createElement("div"); d.className="lbl t"+c.tier; d.hidden=true; d.addEventListener("click",()=>openClub(c.i,true)); LBL.appendChild(d); return d; });
+function labelHTML(c){ const t=total(c), cap=mem.el[c.i][0][0]; return `<b>${esc(c.nome)}</b><small>${t}/${CAP} jogadores</small>${cap?`<span class="cap">${FLAG()}@${esc(cap)}</span>`:""}`; }
+function refreshLabels(){ clubs.forEach(c=>labels[c.i].innerHTML=labelHTML(c)); }
+refreshLabels();
+const ufl=Object.entries(window.ESTADOS).map(([k,v])=>{ const d=document.createElement("div"); d.className="uf"; d.textContent=v[0]; d.hidden=true; LBL.appendChild(d); const p=proj(v[1],v[2]); return {d,x:p.x,z:-p.y}; });
+const pchips=[]; for(let j=0;j<11;j++){ const d=document.createElement("div"); d.className="pchip"; d.hidden=true; LBL.appendChild(d); pchips.push(d); }
+
+const V=new THREE.Vector3();
+const TIER_D=[0,900,420,230,140];
+let W_=1,H_=1;
+function updateLabels(){
+  const cand=[], cp=camera.position;
+  clubs.forEach(c=>{ const d=Math.hypot(cp.x-c.x,cp.y-B,cp.z-c.z); const sel=c.i===selected; if(d<TIER_D[c.tier]||sel) cand.push([c,d,sel]); else labels[c.i].hidden=true; });
+  cand.sort((a,b)=>(b[2]-a[2])||(a[0].tier-b[0].tier)||(a[1]-b[1]));
+  const occ=[]; let shown=0;
+  for(const [c,d,sel] of cand){
+    const el=labels[c.i];
+    V.set(c.x,B+2.6,c.z).project(camera);
+    if(V.z>1||V.x<-1.1||V.x>1.1||V.y<-1.1||V.y>1.15||shown>90){ el.hidden=true; continue; }
+    const sx=(V.x*.5+.5)*W_, sy=(-V.y*.5+.5)*H_;
+    const bw=c.tier===1?130:112, bh=44;
+    if(!sel && occ.some(o=>Math.abs(o[0]-sx)<(o[2]+bw)/2&&Math.abs(o[1]-sy)<bh)){ el.hidden=true; continue; }
+    occ.push([sx,sy,bw]); shown++;
+    el.hidden=false; el.classList.toggle("sel",sel);
+    el.style.transform=`translate3d(${sx|0}px,${sy|0}px,0) translate(-50%,-100%)`;
+  }
+  const far=camera.position.distanceTo(controls.target);
+  ufl.forEach(u=>{ if(far<260||far>1400){u.d.hidden=true;return;} V.set(u.x,H,u.z).project(camera); if(V.z>1){u.d.hidden=true;return;} u.d.hidden=false; u.d.style.transform=`translate3d(${(V.x*.5+.5)*W_|0}px,${(-V.y*.5+.5)*H_|0}px,0) translate(-50%,-50%)`; });
+  // chips dos titulares
+  const showP=selected>=0 && pl.count>0 && Math.hypot(cp.x-clubs[selected].x,cp.y-B,cp.z-clubs[selected].z)<26;
+  pchips.forEach((d,j)=>{ if(!showP||!pitchPos[j]){d.hidden=true;return;} V.set(pitchPos[j][0],B+1.3,pitchPos[j][1]).project(camera); d.hidden=false; d.style.transform=`translate3d(${(V.x*.5+.5)*W_|0}px,${(-V.y*.5+.5)*H_|0}px,0) translate(-50%,-100%)`; });
+}
+
+/* ================= CÂMERA ================= */
+let fly=null;
+function flyTo(x,z,dist,dur){
+  const t0=controls.target.clone(), p0=camera.position.clone();
+  const dir=p0.clone().sub(t0).normalize(); if(dir.y<0.45){ dir.y=0.62; dir.normalize(); }
+  const t1=new THREE.Vector3(x,H,z), p1=t1.clone().add(dir.multiplyScalar(dist));
+  fly={t0,p0,t1,p1,s:performance.now(),d:dur||1100};
+}
+function home(){ flyTo((minX+maxX)/2+40,-(minY+maxY)/2-30,1250,1300); }
+function dolly(f){ const off=camera.position.clone().sub(controls.target); const L=THREE.MathUtils.clamp(off.length()*f,controls.minDistance,controls.maxDistance); flyTo(controls.target.x,controls.target.z,L,450); }
+document.getElementById("zin").onclick=()=>dolly(0.55);
+document.getElementById("zout").onclick=()=>dolly(1.8);
+document.getElementById("zall").onclick=()=>{ closePanel(); home(); };
+
+/* ================= UI ================= */
+const $=id=>document.getElementById(id);
+const panel=$("panel"), bar=$("bar");
+let selected=-1, tab="elenco", elv=0, hlHandle=null, pitchPos=[];
+function cnt(){
+  if(MODE==="carregando"){ $("count").textContent="carregando jogadores…"; return; }
+  let tot=0, ex=0; mem.byH.forEach(r=>{ tot++; if(r.ex) ex++; });
+  const teams=clubs.filter(c=>total(c)>0).length;
+  $("count").innerHTML=`${fmt(tot)} jogadores em ${fmt(teams)} times${mem.fila.length?` · ${fmt(mem.fila.length)} na fila`:""}${ex?`<span class="ex">inclui ${fmt(ex)} jogadores de exemplo</span>`:""}${MODE==="demo"&&!ex?`<span class="ex">modo de teste (salvo só neste navegador)</span>`:""}`;
+}
+cnt();
+
+function placePitchPlayers(){
+  if(selected<0){ pl.count=0; pitchPos=[]; return; }
+  const c=clubs[selected], tit=titOf(selected), c1=new THREE.Color(c.c1);
+  pitchPos=[]; let n=0;
+  FORM.forEach((f,j)=>{ const x=c.x+f[1]*1.05, z=c.z+f[2]*1.02; pitchPos.push(tit[j]?[x,z]:null); if(!tit[j]) return; setI(pl,n,x,B+1.1,z); pl.setColorAt(n,f[0]==="GOL"?TMP.set("#ffc83d"):c1); n++; });
+  pl.count=n; pl.instanceMatrix.needsUpdate=true; if(pl.instanceColor) pl.instanceColor.needsUpdate=true;
+  FORM.forEach((f,j)=>{ const d=pchips[j]; d.className="pchip"+(f[0]==="GOL"?" gk":""); d.innerHTML=tit[j]?`<i>${f[0]}</i>@${esc(tit[j])}`:""; });
+}
+
+function openClub(ci,flyIt,hl){
+  selected=ci; hlHandle=hl||null;
+  const r=hl&&mem.byH.get(hl); elv=r?r.e:0;
+  renderPanel(); placePitchPlayers();
+  if(flyIt) flyTo(clubs[ci].x,clubs[ci].z,17,1200);
+}
+function closePanel(){ selected=-1; panel.hidden=true; bar.hidden=false; placePitchPlayers(); }
+const canSort=()=>MODE==="demo"||!!adminKey;
+function renderPanel(){
+  const c=clubs[selected]; if(!c) return;
+  const E=mem.el[c.i], t=total(c), oe=openEl(c), fila=mem.fila.filter(x=>x.c===c.i).length;
+  const curN=oe>=0?E[oe].length:PER, cap=E[0][0];
+  const prog= oe>=0 ? `próxima meta: <em>faltam ${PER-curN}</em> pro ${ELENCOS[oe]} fechar` : `elenco completo! <em>${fila}</em> na fila de espera`;
+  let body="";
+  if(tab==="elenco"){
+    const chips=ELENCOS.map((n,e)=>`<button class="elc" data-el="${e}" aria-pressed="${e===elv}">${n} <small>${E[e].length}/${PER}</small></button>`).join("");
+    const byPos={}; E[elv].forEach(h=>{const p=mem.byH.get(h).pos;(byPos[p]=byPos[p]||[]).push(h);});
+    const rows=Object.keys(SLOTS).map(k=>{ const hs=byPos[k]||[]; let ch=hs.map(h=>`<span class="hd${h===hlHandle?" hl":""}" title="@${esc(h)}">@${esc(h)}</span>`).join(""); for(let j=hs.length;j<SLOTS[k];j++) ch+=`<span class="hd v">vaga</span>`; return `<div class="pl">${POSP[k]}</div><div class="ch">${ch}</div>`; }).join("");
+    body=`<div class="els">${chips}</div><div class="pos">${rows}</div>`;
+  } else {
+    const tit=titOf(c.i);
+    const mk=FORM.map((f,j)=>`<div class="mk${tit[j]?"":" v"}" style="left:${(f[1]/1.12*.5+.5)*100}%;top:${(f[2]/0.6*.5+.5)*100}%;--c1:${f[0]==="GOL"?"#ffc83d":c.c1}"><i></i><span>${tit[j]?"@"+esc(tit[j]):f[0]+" vaga"}</span></div>`).join("");
+    const res=E[0].filter(h=>!tit.includes(h));
+    body=`<div class="mini">${mk}</div>
+      <div class="kv"><span>formação</span><b>4-3-3</b></div>
+      <div class="kv"><span>reservas</span><b>${res.length}</b></div>
+      ${canSort()?`<button class="btn sm y" id="psort">🎲 sortear titulares</button>`:""}
+      <p class="note">Os titulares saem do elenco Principal. Antes de cada jogo do campeonato, o sorteio é refeito.</p>`;
+  }
+  panel.innerHTML=`
+    <div class="ph">${FLAG(c.c1,26)}<h2>${esc(c.nome)}</h2><button class="circ" id="pclose" aria-label="Fechar"><svg viewBox="0 0 20 20"><path d="M5 5l10 10M15 5L5 15" stroke="#1c2230" stroke-width="3" stroke-linecap="round"/></svg></button></div>
+    <div class="sub"><span class="ufc">${c.uf}</span>${esc(c.cidade)} · ${esc(c.est)}</div>
+    <div class="tiles"><div class="tile"><b>${t}</b><span>jogadores</span></div><div class="tile"><b>${CAP-t}</b><span>vagas</span></div><div class="tile"><b>#${RBR[c.i]}</b><span>no Brasil</span></div><div class="tile"><b>#${RUF[c.i]}</b><span>em ${c.uf}</span></div></div>
+    <div class="prog">${prog}<div class="pbar"><i style="width:${(curN/PER*100).toFixed(1)}%"></i></div></div>
+    <div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="elenco" aria-selected="${tab==="elenco"}">Elenco</button><button class="tab" role="tab" data-tab="tit" aria-selected="${tab==="tit"}">Titulares</button></div>
+    ${body}
+    <div class="kv"><span>capitão (1º a entrar)</span><b>${cap?"@"+esc(cap):"—"}</b></div>
+    <div class="kv"><span>presidente do clube</span><b>eleição em breve</b></div>
+    <div class="acts"><button class="btn y" id="pfly">ver no mapa</button><button class="btn" id="pjoin">${MODE==="demo"?"entrar no time":"como entrar"}</button></div>`;
+  panel.hidden=false; bar.hidden=true;
+  $("pclose").onclick=closePanel;
+  $("pfly").onclick=()=>flyTo(c.x,c.z,13,900);
+  $("pjoin").onclick=()=>{ if(MODE==="demo"){ openModal("mjoin"); $("jt").value=c.nome; $("ju").focus(); } else { $("hjoin").textContent=c.nome; openModal("mhelp"); } };
+  panel.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{tab=b.dataset.tab; renderPanel();});
+  panel.querySelectorAll("[data-el]").forEach(b=>b.onclick=()=>{elv=+b.dataset.el; renderPanel();});
+  const ps=$("psort"); if(ps) ps.onclick=async()=>{
+    if(MODE==="demo"){ GC.sortear(mem,c.i); saveDemo(); renderPanel(); placePitchPlayers(); return; }
+    try{ await adm("sortear",{ci:c.i}); toast("Titulares sorteados e salvos"); }catch(e){ toast(esc(e.message)); }
+  };
+}
+
+function toast(html,ms){ const t=$("toast"); t.innerHTML=html; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,ms||4200); }
+
+function afterChange(){ rank(); refreshLabels(); cnt(); if(selected>=0){ renderPanel(); placePitchPlayers(); } saveDemo(); }
+
+/* ---------- servidor ---------- */
+function applyServer(p){ if(!p||!p.s) return; REV=p.rev; mem=GC.decode(p.s); afterChange(); }
+async function fetchState(){
+  const r=await fetch("/api/state",{cache:"no-store"});
+  if(!r.ok || !(r.headers.get("content-type")||"").includes("json")) throw new Error("sem servidor");
+  const j=await r.json(); if(!j||!j.s) throw new Error("sem servidor"); return j;
+}
+async function boot(){
+  try{ const j=await fetchState(); MODE="servidor"; applyServer(j); }
+  catch(e){ MODE="demo"; if(!loadDemo()) addExamples(2200,mulberry(2026)); afterChange(); }
+  document.body.dataset.mode=MODE;
+  if(MODE==="servidor") setInterval(async()=>{ if(document.hidden) return; try{ const j=await fetchState(); if(j.rev!==REV) applyServer(j); }catch(e){} },30000);
+}
+
+let adminKey=""; try{ adminKey=sessionStorage.getItem("cds-admin")||""; }catch(e){}
+async function adm(action,extra){
+  const r=await fetch("/api/admin",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.assign({action,key:adminKey},extra||{}))});
+  const j=await r.json().catch(()=>({error:"Resposta inválida do servidor"}));
+  if(!r.ok){ const e=new Error(j.error||("Erro "+r.status)); e.j=j; e.status=r.status; throw e; }
+  if(j.state) applyServer(j.state);
+  return j;
+}
+function describe(r){
+  if(!r) return ["bad","Comentário ignorado (@ inválido ou é uma resposta)."];
+  const nome=i=>esc(clubs[i].nome);
+  if(r.kind==="ok") return ["ok",`<b>@${esc(r.user)}</b> entrou no <b>${nome(r.c)}</b> como <b>${POSN[r.pos]}</b> (${ELENCOS[r.e]}) ⚽`];
+  if(r.kind==="fila") return ["warn",`O ${nome(r.c)} está lotado (${CAP}/${CAP}). @${esc(r.user)} entrou na fila, posição ${r.n}.`];
+  if(r.kind==="ja") return ["warn",`@${esc(r.user)} já joga no ${nome(r.c)} (${POSN[r.pos]}). Cada @ entra em um time só.`];
+  if(r.kind==="filaja") return ["warn",`@${esc(r.user)} já está na fila do ${nome(r.c)}.`];
+  if(r.kind==="amb") return ["warn",`Ficou em dúvida: ${r.amb.map(nome).join(", ")}. A resposta automática pede o nome completo.`];
+  return ["bad","Não achei nenhum time nesse comentário. A resposta automática pede o nome do time."];
+}
+function showRes(el,kind,html){ el.hidden=false; el.className="res "+kind; el.innerHTML=html; }
+
+/* busca */
+$("sform").addEventListener("submit",ev=>{ ev.preventDefault(); const q=$("q").value.trim(); if(!q) return;
+  const h=cleanH(q), r=mem.byH.get(h);
+  if(r){ tab="elenco"; openClub(r.c,true,h); toast(`<b>@${esc(h)}</b> joga no ${esc(clubs[r.c].nome)} como ${POSN[r.pos]} (${ELENCOS[r.e]})`); return; }
+  const f=mem.fila.find(x=>x.h===h); if(f){ openClub(f.c,true); toast(`<b>@${esc(h)}</b> está na fila do ${esc(clubs[f.c].nome)}`); return; }
+  const fc=findClub(q);
+  if(fc&&fc.ci!==undefined){ tab="elenco"; openClub(fc.ci,true); return; }
+  if(fc&&fc.amb){ toast(`Qual deles? ${fc.amb.map(i=>esc(clubs[i].nome)).join(", ")}`); return; }
+  const nq=nt(q);
+  const cityC=clubs.filter(c=>nt(c.cidade)===nq);
+  if(cityC.length){ const c=cityC.sort((a,b)=>a.tier-b.tier)[0]; closePanel(); flyTo(c.x,c.z,cityC.length>2?45:28); toast(`${esc(c.cidade)}: ${cityC.length} time${cityC.length>1?"s":""}`); return; }
+  const uf=Object.entries(window.ESTADOS).find(([k,v])=>nt(k)===nq||nt(v[0])===nq);
+  if(uf){ const p=proj(uf[1][1],uf[1][2]); closePanel(); flyTo(p.x,-p.y,260); const n=clubs.filter(c=>c.uf===uf[0]).length; toast(`${esc(uf[1][0])}: ${n} times no mapa`); return; }
+  toast(`Não achei <b>${esc(q)}</b>. Tente um @, time, cidade ou estado.`);
+});
+
+/* modais */
+function openModal(id){ $(id).hidden=false; }
+document.querySelectorAll(".modal").forEach(m=>{ m.addEventListener("click",e=>{ if(e.target===m||e.target.closest("[data-close]")) m.hidden=true; }); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"){ const open=[...document.querySelectorAll(".modal")].find(m=>!m.hidden); if(open) open.hidden=true; else if(selected>=0) closePanel(); } });
+$("bjoin").onclick=()=>{ openModal("mjoin"); $("ju").focus(); };
+$("bhelp").onclick=()=>{ $("hjoin").textContent="Galo"; openModal("mhelp"); };
+$("brank").onclick=()=>{ renderRank("BR"); openModal("mrank"); };
+$("badmin").onclick=()=>{ renderAdmin(); openModal("madmin"); };
+if(location.hash==="#painel") setTimeout(()=>{ renderAdmin(); openModal("madmin"); },300);
+
+/* simulador (modo de teste) */
+$("jgo").onclick=()=>{
+  const out=$("jres"), h=cleanH($("ju").value);
+  if(!GC.validH(h)){ showRes(out,"bad","Coloque um @ válido (letras, números, ponto ou _)."); return; }
+  const r=GC.processComment(mem,{user:h,text:$("jt").value}); const d=describe(r); showRes(out,d[0],d[1]);
+  if(r&&(r.kind==="ok"||r.kind==="fila")){ afterChange(); if(r.kind==="ok") openClub(r.c,true,h); }
+};
+document.querySelectorAll("[data-bulk]").forEach(b=>b.onclick=()=>{ const n=+b.dataset.bulk; const t0=performance.now(); addExamples(n); afterChange(); showRes($("jres"),"ok",`${fmt(n)} comentários de exemplo processados em ${Math.round(performance.now()-t0)} ms.`); });
+$("jclr").onclick=()=>{ clearExamples(); afterChange(); showRes($("jres"),"ok","Jogadores de exemplo apagados. Ficaram só os que você adicionou."); };
+$("jzero").onclick=()=>$("jconf").hidden=false;
+$("jzno").onclick=()=>$("jconf").hidden=true;
+$("jzok").onclick=()=>{ mem=GC.decode(GC.newState()); afterChange(); $("jconf").hidden=true; showRes($("jres"),"ok","Tudo zerado. O mapa está vazio esperando os comentários."); };
+
+/* painel do criador (site publicado) */
+const ago=t=>{ if(!t) return "nunca"; const s=Math.round((Date.now()-new Date(t).getTime())/1000); return s<60?`há ${s}s`:s<3600?`há ${Math.round(s/60)} min`:`há ${Math.round(s/3600)} h`; };
+async function renderAdmin(){
+  const box=$("abody");
+  if(MODE==="demo"){ box.innerHTML=`<p class="note">O painel funciona no site publicado na Cloudflare. Nesta prévia, use o botão <b>simular comentário</b>.</p>`; return; }
+  if(!adminKey){
+    box.innerHTML=`<label class="fld" for="ak">senha do painel<input id="ak" type="password" autocomplete="current-password"></label><button class="btn y" id="ago">entrar</button><div id="ares" class="res" hidden></div>`;
+    $("ago").onclick=async()=>{ adminKey=$("ak").value; try{ await adm("login"); try{sessionStorage.setItem("cds-admin",adminKey);}catch(e){} renderAdmin(); afterChange(); }
+      catch(e){ if(e.j&&e.j.needSetup){ adminKey=""; renderSetup(); return; } adminKey=""; showRes($("ares"),"bad",esc(e.message)); } };
+    return;
+  }
+  box.innerHTML=`<p class="note">carregando…</p>`;
+  let L; try{ L=await adm("login"); }catch(e){ adminKey=""; try{sessionStorage.removeItem("cds-admin");}catch(_){} renderAdmin(); return; }
+  const ig=L.ig||{}, cfg=L.cfg||{};
+  box.innerHTML=`
+    <div class="sec"><h4>🔌 Instagram</h4>
+      <div class="kv"><span>conta</span><b>${ig.username?"@"+esc(ig.username):"não conectada"}</b></div>
+      <div class="kv"><span>última leitura</span><b>${ago(ig.lastPoll)}</b></div>
+      <div class="kv"><span>entraram pelo Instagram</span><b>${fmt(ig.imported||0)}</b></div>
+      <div class="kv"><span>respostas enviadas</span><b>${fmt(ig.replies||0)}</b></div>
+      ${ig.error?`<div class="res bad">${esc(ig.error)}</div>`:""}
+      <button class="btn sm y" id="apoll">ler comentários agora</button>
+      <label class="fld" for="atok">token do Instagram (só se ainda não colocou)<textarea id="atok" rows="2" placeholder="cole o token aqui"></textarea></label>
+      <button class="btn sm" id="atoks">salvar token</button>
+      <label class="fld" for="atag">hashtag dos vídeos do jogo<input id="atag" value="${esc(cfg.gameTag||"")}"></label>
+      <label class="chk"><input type="checkbox" id="aauto" ${cfg.autoReply?"checked":""}> responder os comentários automaticamente</label>
+      <button class="btn sm" id="acfg">salvar configurações</button>
+      <div id="ares1" class="res" hidden></div>
+    </div>
+    <div class="sec"><h4>💬 Testar comentário</h4>
+      <p class="note">Entra no mapa de verdade, como se tivesse vindo do Instagram (sem resposta automática).</p>
+      <label class="fld" for="au">@<input id="au" placeholder="@usuario"></label>
+      <label class="fld" for="at">comentário<input id="at" placeholder="ex: vamo galo"></label>
+      <button class="btn sm y" id="atest">testar</button>
+      <div id="ares2" class="res" hidden></div>
+    </div>
+    <div class="sec"><h4>⚽ Jogadores</h4>
+      <label class="fld" for="ar">tirar um @ do jogo (o 1º da fila entra no lugar)<input id="ar" placeholder="@usuario"></label>
+      <div class="acts"><button class="btn sm" id="arem">tirar do jogo</button><button class="btn sm" id="asortall">🎲 sortear titulares de todos</button></div>
+      <div id="ares3" class="res" hidden></div>
+    </div>
+    <div class="sec"><h4>💾 Dados</h4>
+      <div class="acts"><button class="btn sm" id="aback">baixar backup</button><label class="btn sm" for="afile">restaurar backup</label></div>
+      <input type="file" id="afile" accept=".json,application/json" hidden>
+      <button class="btn sm red" id="azero">zerar o mapa</button>
+      <div id="aconf" class="res warn" hidden>Isso apaga todos os jogadores e a fila do site publicado. <div class="acts" style="margin-top:8px"><button class="btn sm red" id="azok">sim, zerar</button><button class="btn sm" id="azno">cancelar</button></div></div>
+      <div id="ares4" class="res" hidden></div>
+    </div>
+    <button class="btn sm" id="aout">sair do painel</button>`;
+  const run=async(btn,out,fn)=>{ const b=$(btn); b.disabled=true; try{ await fn(); }catch(e){ showRes($(out),"bad",esc(e.message)); } b.disabled=false; };
+  $("apoll").onclick=()=>run("apoll","ares1",async()=>{ const j=await adm("igpoll"); showRes($("ares1"),j.res&&j.res.erro?"bad":"ok",j.res&&j.res.skipped?"Coloque o token do Instagram primeiro.":j.res&&j.res.erro?esc(j.res.erro):`${fmt(j.res.novos||0)} comentário(s) novo(s) processado(s).`); });
+  $("atoks").onclick=()=>run("atoks","ares1",async()=>{ const j=await adm("settoken",{token:$("atok").value}); showRes($("ares1"),j.ig&&j.ig.error?"bad":"ok",j.ig&&j.ig.error?esc(j.ig.error):`Conectado como @${esc(j.ig.username)}.`); });
+  $("acfg").onclick=()=>run("acfg","ares1",async()=>{ await adm("settings",{gameTag:$("atag").value,autoReply:$("aauto").checked}); showRes($("ares1"),"ok","Configurações salvas."); });
+  $("atest").onclick=()=>run("atest","ares2",async()=>{ const h=cleanH($("au").value); if(!GC.validH(h)) throw new Error("Coloque um @ válido."); const j=await adm("test",{user:h,text:$("at").value}); const d=describe(j.res); showRes($("ares2"),d[0],d[1]); if(j.res&&j.res.kind==="ok") openClub(j.res.c,true,h); });
+  $("arem").onclick=()=>run("arem","ares3",async()=>{ const h=cleanH($("ar").value); const j=await adm("remove",{user:h}); const r=j.res; showRes($("ares3"),r&&r.st!=="nao"?"ok":"warn",r&&r.st==="ok"?`@${esc(h)} saiu do jogo.${r.promoted?` @${esc(r.promoted)} saiu da fila e entrou no lugar.`:""}`:r&&r.st==="fila"?`@${esc(h)} saiu da fila.`:`@${esc(h)} não está no jogo.`); });
+  $("asortall").onclick=()=>run("asortall","ares3",async()=>{ const j=await adm("sortearTodos"); showRes($("ares3"),"ok",`Titulares sorteados em ${fmt(j.res.times)} times.`); });
+  $("aback").onclick=()=>run("aback","ares4",async()=>{ const j=await adm("backup"); const blob=new Blob([JSON.stringify(j)],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=`clube-dos-seguidores-backup-${new Date().toISOString().slice(0,10)}.json`; document.body.appendChild(a); a.click(); a.remove(); showRes($("ares4"),"ok","Backup baixado."); });
+  $("afile").onchange=e=>run("aback","ares4",async()=>{ const f=e.target.files[0]; if(!f) return; const d=JSON.parse(await f.text()); const j=await adm("restore",{state:d.state,cfg:d.cfg}); showRes($("ares4"),"ok",`Backup restaurado: ${fmt(j.res.jogadores)} jogadores.`); e.target.value=""; });
+  $("azero").onclick=()=>$("aconf").hidden=false;
+  $("azno").onclick=()=>$("aconf").hidden=true;
+  $("azok").onclick=()=>run("azok","ares4",async()=>{ await adm("zerar"); $("aconf").hidden=true; showRes($("ares4"),"ok","Mapa zerado."); });
+  $("aout").onclick=()=>{ adminKey=""; try{sessionStorage.removeItem("cds-admin");}catch(e){} renderAdmin(); afterChange(); };
+}
+function renderSetup(){
+  $("abody").innerHTML=`<p class="note">Primeiro acesso: crie a senha do painel. Guarde bem, ela protege o mapa.</p><label class="fld" for="an">nova senha (mínimo 6 caracteres)<input id="an" type="password" autocomplete="new-password"></label><button class="btn y" id="ans">criar senha</button><div id="ares" class="res" hidden></div>`;
+  $("ans").onclick=async()=>{ try{ await adm("setup",{newKey:$("an").value}); adminKey=$("an").value; try{sessionStorage.setItem("cds-admin",adminKey);}catch(e){} renderAdmin(); }catch(e){ showRes($("ares"),"bad",esc(e.message)); } };
+}
+
+function renderRank(f){
+  const ufs=["BR",...[...new Set(clubs.map(c=>c.uf))].sort()];
+  $("rkf").innerHTML=ufs.map(u=>`<button class="elc" data-uf="${u}" aria-pressed="${u===f}">${u==="BR"?"Brasil":u}</button>`).join("");
+  $("rkf").querySelectorAll("[data-uf]").forEach(b=>b.onclick=()=>renderRank(b.dataset.uf));
+  const list=RANK.filter(c=>f==="BR"||c.uf===f).slice(0,30);
+  $("rkl").innerHTML=list.map((c,i)=>`<div class="rk" data-ci="${c.i}"><span class="n">${i+1}</span><span class="dot" style="background:${c.c1}"></span><span>${esc(c.nome)} <small style="color:var(--mut)">${c.uf}</small></span><span class="v">${total(c)} <small>/ ${CAP}</small></span></div>`).join("");
+  $("rkl").querySelectorAll("[data-ci]").forEach(d=>d.onclick=()=>{ $("mrank").hidden=true; tab="elenco"; openClub(+d.dataset.ci,true); });
+}
+
+/* clique no estádio */
+const ray=new THREE.Raycaster(), mv=new THREE.Vector2(); let down=null;
+cv.addEventListener("pointerdown",e=>{ down=[e.clientX,e.clientY,performance.now()]; fly=null; });
+cv.addEventListener("pointerup",e=>{ if(!down) return; const moved=Math.hypot(e.clientX-down[0],e.clientY-down[1]); if(moved>7||performance.now()-down[2]>600){down=null;return;} down=null;
+  mv.set(e.clientX/W_*2-1,-(e.clientY/H_)*2+1); ray.setFromCamera(mv,camera); const hit=ray.intersectObject(pad);
+  if(hit.length){ tab="elenco"; openClub(hit[0].instanceId,true); } });
+
+/* ================= LOOP ================= */
+function resize(){ W_=window.innerWidth; H_=window.innerHeight; renderer.setSize(W_,H_,false); camera.aspect=W_/H_; camera.updateProjectionMatrix(); }
+window.addEventListener("resize",resize); resize();
+
+const start=proj(-21.2,-45.2);
+controls.target.set(start.x,H,-start.y); camera.position.set(start.x-40,170,-start.y+140); controls.update();
+
+const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+let active=[], frame=0;
+function pickActive(){ const tg=controls.target, d=camera.position.distanceTo(tg); if(d>520){active=[];return;} const R=Math.max(60,d*0.9); active=clubs.filter(c=>Math.hypot(c.x-tg.x,c.z-tg.z)<R); }
+function loop(now){
+  requestAnimationFrame(loop);
+  const t=now/1000;
+  if(fly){ const k=Math.min(1,(now-fly.s)/fly.d), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2; controls.target.lerpVectors(fly.t0,fly.t1,e); camera.position.lerpVectors(fly.p0,fly.p1,e); if(k>=1) fly=null; }
+  controls.update();
+  if(frame++%20===0) pickActive();
+  if(!reduce && active.length){ active.forEach(c=>animClub(c,t)); [fans,parade,pole,cloth,busB,busS,busW].forEach(m=>m.instanceMatrix.needsUpdate=true); }
+  clouds.children.forEach(g=>{ g.position.x+=g.userData.v*0.05; if(g.position.x>maxX+200) g.position.x=minX-200; });
+  updateLabels();
+  renderer.render(scene,camera);
+}
+$("loading").remove();
+requestAnimationFrame(loop);
+boot();
+setTimeout(()=>toast(`Toque num estádio pra ver o elenco · comente o time no vídeo pra entrar`,5200),600);
+})();
+</script>
+</body>
+</html>
