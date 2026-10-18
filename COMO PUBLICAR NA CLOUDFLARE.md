@@ -2,7 +2,7 @@
 
 O jogo roda num **Worker da Cloudflare**, que entrega o site e o servidor. Os jogadores ficam guardados no banco **D1**.
 
-O banco é o mesmo `cidade` que você já criou para o Tenha Sua Empresa. O Clube dos Seguidores usa uma tabela própria (`clube_kv`), então um jogo não mexe no outro e você não precisa criar nada novo.
+O banco `clube-dos-seguidores` é criado sozinho no primeiro deploy. Você não precisa criar nada no painel.
 
 ## 1. Publicar a partir do GitHub
 1. Na Cloudflare, vá em **Workers & Pages → Create → Import a repository**.

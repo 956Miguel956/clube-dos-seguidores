@@ -1,12 +1,12 @@
 // Configuração da Cloudflare (Worker + site + banco D1 + leitura do Instagram a cada 1 min)
-// O banco é o mesmo "cidade" do Tenha Sua Empresa, mas o jogo usa uma tabela própria (clube_kv).
+// O banco D1 "clube-dos-seguidores" é criado sozinho no primeiro deploy (por isso não tem database_id).
 {
   "name": "clube-dos-seguidores",
   "main": "worker/index.mjs",
   "compatibility_date": "2025-09-01",
   "assets": { "directory": "./public", "binding": "ASSETS" },
   "d1_databases": [
-    { "binding": "DB", "database_name": "cidade", "database_id": "c698805d-d314-4c08-ac23-1ef6a3a89c17" }
+    { "binding": "DB", "database_name": "clube-dos-seguidores" }
   ],
   "triggers": { "crons": ["* * * * *"] },
   "keep_vars": true,
