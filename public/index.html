@@ -300,8 +300,8 @@ const SKY_TOP=new THREE.Color(0x6fbdf0), SKY_HOR=new THREE.Color(0xe4f5fd);
 scene.background=SKY_HOR.clone();
 scene.fog=new THREE.Fog(0xdcf1fb,900,3200);
 const camera=new THREE.PerspectiveCamera(40,1,0.5,9000);
-scene.add(new THREE.HemisphereLight(0xeaf6ff,0x5a7d44,0.6));
-const sun=new THREE.DirectionalLight(0xfff0d8,0.95);
+scene.add(new THREE.HemisphereLight(0xe6f3ff,0x4c6a3a,0.5));
+const sun=new THREE.DirectionalLight(0xffeccc,0.74);
 sun.castShadow=true; sun.shadow.mapSize.set(2048,2048); sun.shadow.bias=-0.0005; sun.shadow.normalBias=0.04;
 sun.shadow.camera.near=1; sun.shadow.camera.far=1400; scene.add(sun); scene.add(sun.target);
 const SUN_DIR=new THREE.Vector3(-0.42,1,0.38).normalize();
@@ -356,7 +356,7 @@ function region(lat,lon){
   if(lon>-42.5&&lat<-12) return "mata";
   return "campo";
 }
-const RCOL={amazonia:[70,146,58],sertao:[178,186,102],pantanal:[122,182,96],cerrado:[150,184,82],sul:[110,176,80],mata:[92,164,70],campo:[126,182,82]};
+const RCOL={amazonia:[62,134,52],sertao:[170,176,98],pantanal:[112,170,88],cerrado:[140,172,76],sul:[100,164,72],mata:[82,152,62],campo:[116,170,76]};
 
 /* ---------- estádios: posição (afasta quem está colado) ---------- */
 const PAD_R=6.9, OVZ=0.8, B=H+0.12, LABEL_Y=B+3.6;
@@ -377,7 +377,7 @@ function nearStadium(x,z,r){ const gx=Math.floor(x/12),gz=Math.floor(z/12); for(
 /* ---------- cidades ---------- */
 const TW=[0,34,20,12,7];
 const cities=(function(){ const m=new Map(); clubs.forEach(c=>{ const k=c.uf+"|"+c.cidade; if(!m.has(k)) m.set(k,{nome:c.cidade,uf:c.uf,x:0,z:0,n:0,w:0}); const o=m.get(k); o.x+=c.ox; o.z+=c.oz; o.n++; o.w+=TW[c.tier]; });
-  return [...m.values()].map(o=>{ o.x/=o.n; o.z/=o.n; o.w=Math.min(130,o.w); o.R=5+Math.sqrt(o.w)*2.4; return o; }); })();
+  return [...m.values()].map(o=>{ o.x/=o.n; o.z/=o.n; o.w=Math.min(130,o.w); o.R=4+Math.sqrt(o.w)*1.7; return o; }); })();
 function inCity(x,z,f){ for(const c of cities){ if(Math.abs(c.x-x)<c.R*f&&Math.abs(c.z-z)<c.R*f&&Math.hypot(c.x-x,c.z-z)<c.R*f) return c; } return null; }
 
 /* ---------- terreno ---------- */
@@ -401,7 +401,7 @@ function terrainTexture(){
     const dens=rg==="amazonia"?1:rg==="mata"?.8:rg==="sul"?.45:rg==="cerrado"?.3:.2; if(r()>dens) continue;
     g.fillStyle=r()<.75?"rgba(36,104,40,.5)":"rgba(220,236,180,.3)"; g.beginPath(); g.arc(px,py,.8+r()*1.5,0,7); g.fill(); }
   // 4) manchas urbanas
-  cities.forEach(c=>{ const p=toC(c.x,-c.z), rad=c.R/BW*S*1.15; const gr=g.createRadialGradient(p[0],p[1],0,p[0],p[1],rad); gr.addColorStop(0,"rgba(222,218,204,.95)"); gr.addColorStop(.7,"rgba(214,212,196,.7)"); gr.addColorStop(1,"rgba(214,212,196,0)"); g.fillStyle=gr; g.beginPath(); g.arc(p[0],p[1],rad,0,7); g.fill(); });
+  cities.forEach(c=>{ const p=toC(c.x,-c.z), rad=c.R/BW*S*1.15; const gr=g.createRadialGradient(p[0],p[1],0,p[0],p[1],rad); gr.addColorStop(0,"rgba(196,192,176,.85)"); gr.addColorStop(.75,"rgba(190,190,172,.55)"); gr.addColorStop(1,"rgba(190,190,172,0)"); g.fillStyle=gr; g.beginPath(); g.arc(p[0],p[1],rad,0,7); g.fill(); });
   // 5) rios
   RIVERS.forEach(rv=>{ const path=()=>{ g.beginPath(); rv.forEach((p,i)=>{ const q=proj(p[1],p[0]), c=toC(q.x,q.y); i?g.lineTo(c[0],c[1]):g.moveTo(c[0],c[1]); }); };
     g.lineJoin=g.lineCap="round"; path(); g.strokeStyle="rgba(240,250,255,.95)"; g.lineWidth=10; g.stroke(); path(); g.strokeStyle="#6fc3ee"; g.lineWidth=6; g.stroke(); path(); g.strokeStyle="rgba(170,225,250,.8)"; g.lineWidth=2; g.stroke(); });
@@ -411,7 +411,7 @@ function terrainTexture(){
   tex.repeat.set(1/BW,1/BH); tex.offset.set(-minX/BW,-minY/BH); return tex;
 }
 const shape=new THREE.Shape(); PTS.forEach((p,i)=>i?shape.lineTo(p.x,p.y):shape.moveTo(p.x,p.y));
-const tg=new THREE.ExtrudeGeometry(shape,{depth:1.0,bevelEnabled:true,bevelThickness:0.5,bevelSize:2.4,bevelSegments:2,steps:1,curveSegments:1}); tg.rotateX(-Math.PI/2); tg.translate(0,0.5,0);
+const tg=new THREE.ExtrudeGeometry(shape,{depth:1.0,bevelEnabled:true,bevelThickness:0.5,bevelSize:2.4,bevelSegments:2,steps:1,curveSegments:1}); tg.rotateX(-Math.PI/2);
 const land=new THREE.Mesh(tg,[new THREE.MeshLambertMaterial({map:terrainTexture()}),new THREE.MeshLambertMaterial({color:0xefdca2})]); land.receiveShadow=true; scene.add(land);
 // mar: fundo + duas faixas de água rasa perto da costa
 function offsetPoly(pts,dd){ let area=0; for(let i=0;i<pts.length;i++){ const a=pts[i],b=pts[(i+1)%pts.length]; area+=a.x*b.y-b.x*a.y; } const s=area>0?1:-1, n=pts.length;
@@ -540,10 +540,10 @@ done(pad,plaza,road,facade,stands,roof,pitch,busM,busS,flagC,flagP);
   const ROOFC=["#d9734f","#c4613e","#e08a5a","#8e99a8","#b3563a"].map(C);
   const GLASS=["#ffffff","#e8eef4","#dfe6ee","#f3f3f3","#d9e4ef"].map(C);
   const list={h:[],a:[],t:[]};
-  cities.forEach(ct=>{ const n=Math.round(ct.w*2.3), big=ct.w>=34;
+  cities.forEach(ct=>{ const n=Math.round(ct.w*2.6), big=ct.w>=34;
     for(let k=0,tries=0;k<n&&tries<n*8;tries++){
       const rr=ct.R*Math.sqrt(r()), a=r()*Math.PI*2, gx=Math.round((ct.x+Math.cos(a)*rr)/GS), gz=Math.round((ct.z+Math.sin(a)*rr)/GS);
-      if(((gx%5)+5)%5===0||((gz%5)+5)%5===0) continue; // avenidas
+      if(((gx%4)+4)%4===0||((gz%4)+4)%4===0) continue; // avenidas
       const key=gx+","+gz; if(occ.has(key)) continue;
       const x=gx*GS, z=gz*GS; if(!inPoly(x,-z)||nearStadium(x,z,PAD_R+0.9)) continue;
       occ.add(key); k++;
