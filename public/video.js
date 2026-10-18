@@ -186,7 +186,7 @@ function overlay(t, shot) {
     txt("PARE! ✋", cx, 600, 190, "#fff", { scale: pop(t, 0.02, 0.25) * f1 * (1 + Math.sin(t * 40) * 0.03 * f1), rot: -0.05 });
     if (t > 0.55) {
       txt("SEU NOME", cx, 380, 118, "#fff", { scale: pop(t, 0.6) });
-      txt("DENTRO DO ESTÁDIO", cx, 510, 96, SUN, { scale: pop(t, 0.85) });
+      txt("DENTRO DO ESTÁDIO", cx, 510, 88, SUN, { scale: pop(t, 0.85) });
       txt("DO SEU TIME 😱", cx, 630, 104, "#fff", { scale: pop(t, 1.1) });
     }
     if (t > 2.0) pill("COMENTE SEU TIME 👇", cx, 1430, 66, SUN, INK, { scale: pop(t, 2.0) * pulse(t, 12) });
@@ -221,7 +221,7 @@ function overlay(t, shot) {
   } else if (t < 35) {
     const c = shot.club, i = shot.cut - 1, lt = t - 26 - i * 1.8;
     if (t < 30.5) { txt("+200 TIMES", cx, 380, 150, SUN, { scale: pop(t, 26.1) * pulse(t, 6) }); txt("do Flamengo ao Ipatinga 🏟️", cx, 520, 58, "#fff", { scale: pop(t, 26.4) }); }
-    else { txt("O MAIOR TORNEIO", cx, 360, 100, "#fff", { scale: pop(t, 30.5) }); txt("3D DO MUNDO 🌍", cx, 485, 116, SUN, { scale: pop(t, 30.75) * pulse(t, 6) }); }
+    else { txt("O MAIOR TORNEIO", cx, 360, 100, "#fff", { scale: pop(t, 30.5) }); txt("3D DO MUNDO 🌍", cx, 485, 104, SUN, { scale: pop(t, 30.75) * pulse(t, 6) }); }
     if (c) pill(c.nome, cx, 1440, 72, c.c1, lum(c.c1) > 0.6 ? INK : "#fff", { scale: pop(t, 26 + i * 1.8 + 0.05, 0.25) });
   } else {
     txt("SEGUE O PERFIL", cx, 380, 104, "#fff", { scale: pop(t, 35.2) });
@@ -311,7 +311,7 @@ $("vgo").onclick = async () => {
     let err = null;
     const venc = new VideoEncoder({ output: (c, m) => muxer.addVideoChunk(c, m), error: e => err = e });
     venc.configure({ codec: vcodec, width: VW, height: VH, bitrate: 12e6, framerate: FPS, avc: { format: "avc" } });
-    const total = DUR * FPS; const tStart = performance.now();
+    const total = window.__VG.test ? 90 : DUR * FPS; const tStart = performance.now();
     for (let f = 0; f < total; f++) {
       if (err) throw err;
       renderFrame(f / FPS);
@@ -335,7 +335,7 @@ $("vgo").onclick = async () => {
     const blob = new Blob([muxer.target.buffer], { type: "video/mp4" }), url = URL.createObjectURL(blob);
     const name = `reels-clube-dos-seguidores-${clubs[F].nome.toLowerCase().normalize("NFD").replace(/[^a-z0-9]+/g, "-")}.mp4`;
     $("vdl").innerHTML = `<a class="dl" href="${url}" download="${name}">⬇ baixar ${name} (${(blob.size / 1048576).toFixed(1)} MB)</a>`;
-    const a = $("vdl").querySelector("a"); a.click();
+    window.__VG.last = { size: blob.size, aac: aacOk, codec: vcodec }; if (!window.__VG.test) $("vdl").querySelector("a").click();
     bar(1); status(`Pronto! Vídeo de 45 s em 1080x1920${aacOk ? (narrBuf ? " com narração e música" : " com música") : " (sem áudio: o navegador não gerou AAC)"}. Se o download não começar, use o botão verde.`);
   } catch (e) { status("Deu erro ao gerar: " + (e && e.message ? e.message : e)); }
   btn.disabled = false;
