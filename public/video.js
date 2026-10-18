@@ -38,7 +38,7 @@ const SCRIPT = [
   [10, 18, "Os onze primeiros a comentar são os titulares, com posição sorteada. E o primeiro de todos vira o capitão!"],
   [18, 26, "Acabaram as onze vagas? Você vai pro time reserva. Depois vêm o sub-vinte e três, o sub-vinte e o sub-dezessete."],
   [26, 35, "São mais de duzentos times, do Flamengo ao Ipatinga. É o maior torneio 3D do mundo!"],
-  [35, 45, "Segue o perfil, porque os campeonatos começam em breve. Comenta agora o seu time e garanta a sua vaga!"]
+  [35, 45, "Segue o perfil! Em breve começa o Super Campeonato Brasileiro, pra ver qual time vai ser o campeão. Comenta agora o seu time!"]
 ];
 const fmtT = s => "0:" + String(Math.floor(s)).padStart(2, "0");
 const ui = document.createElement("div"); ui.id = "vg";
@@ -48,7 +48,7 @@ ui.innerHTML = `<canvas id="vout" width="${VW}" height="${VH}"></canvas>
   <h1>Gerador do <span>Reels</span></h1>
   <div class="box">
     <label for="vteam">time em destaque<select id="vteam">${sorted.map(c => `<option value="${c.i}"${c.nome === "Flamengo" ? " selected" : ""}>${c.nome}</option>`).join("")}</select></label>
-    <label for="vnar">narração (opcional): MP3 ou WAV de até 45 s<input type="file" id="vnar" accept="audio/*"></label>
+    <label for="vnar">narração (opcional): MP3 ou WAV de até 45 s<input type="file" id="vnar" accept="audio/*" multiple></label>
     <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="vplay">▶ prévia</button><button class="y" id="vgo">⬇ gerar MP4</button></div>
     <div class="bar"><i id="vbar"></i></div>
     <div class="st" id="vst">Pronto. A prévia toca em tempo real; o MP4 é gerado quadro a quadro (leva 1 a 3 minutos).</div>
@@ -226,7 +226,8 @@ function overlay(t, shot) {
   } else {
     txt("SEGUE O PERFIL", cx, 380, 104, "#fff", { scale: pop(t, 35.2) });
     pill("@joguenoseutime", cx, 520, 74, "#fff", INK, { scale: pop(t, 35.5) });
-    if (t > 37.3) { txt("OS CAMPEONATOS", cx, 700, 84, "#fff", { scale: pop(t, 37.3) }); txt("COMEÇAM EM BREVE 🏆", cx, 810, 84, SUN, { scale: pop(t, 37.55) }); }
+    if (t > 37.3) { txt("EM BREVE: 🏆", cx, 690, 80, "#fff", { scale: pop(t, 37.3) }); txt("SUPER CAMPEONATO", cx, 800, 92, SUN, { scale: pop(t, 37.55) }); txt("BRASILEIRO", cx, 905, 92, SUN, { scale: pop(t, 37.8) }); }
+    if (t > 39.0) txt("qual time vai ser o campeão?", cx, 1015, 54, "#fff", { scale: pop(t, 39.0) });
     if (t > 39.5) pill("COMENTE SEU TIME 👇", cx, 1330, 76, SUN, INK, { scale: pop(t, 39.5) * pulse(t, 10) });
     if (t > 41.5) txt("e garanta a sua vaga!", cx, 1460, 60, "#fff", { scale: pop(t, 41.5) });
   }
@@ -272,13 +273,15 @@ async function renderAudio(narration) {
   for (let k = 0; k < 11; k++) popS(18.6 + k * 0.33, 520 + k * 30);
   COMMENTS.forEach((c, i) => popS(4.3 + i * 0.6, 900));
   for (let i = 0; i < 5; i++) popS(23.25 + i * 0.32, 500 + i * 120);
-  if (narration) { const s = oc.createBufferSource(); s.buffer = narration; const g = oc.createGain(); g.gain.value = 1.15; s.connect(g).connect(master); s.start(0); }
+  if (narration) (Array.isArray(narration) ? narration : [[0, narration]]).forEach(([at, buf]) => { const s = oc.createBufferSource(); s.buffer = buf; const g = oc.createGain(); g.gain.value = 1.2; s.connect(g).connect(master); s.start(at); });
   return oc.startRendering();
 }
 let narrBuf = null;
 $("vnar").onchange = async e => {
-  const f = e.target.files[0]; if (!f) { narrBuf = null; return; }
-  try { const ac = new AudioContext({ sampleRate: SR }); narrBuf = await ac.decodeAudioData(await f.arrayBuffer()); ac.close(); status(`Narração carregada (${narrBuf.duration.toFixed(1)} s).` + (narrBuf.duration > DUR ? " Passa de 45 s: o final será cortado." : "")); }
+  const fs = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name)); if (!fs.length) { narrBuf = null; return; }
+  try { const ac = new AudioContext({ sampleRate: SR }); const bufs = []; for (const f of fs) bufs.push(await ac.decodeAudioData(await f.arrayBuffer())); ac.close();
+    narrBuf = bufs.length === 1 ? bufs[0] : bufs.map((b, i) => [SCRIPT[Math.min(i, SCRIPT.length - 1)][0] + 0.15, b]);
+    status(bufs.length === 1 ? `Narração carregada (${bufs[0].duration.toFixed(1)} s).` : `${bufs.length} falas carregadas, cada uma no seu tempo.`); }
   catch (err) { narrBuf = null; status("Não consegui ler esse áudio. Tente MP3 ou WAV."); }
 };
 const status = m => { $("vst").textContent = m; };
