@@ -306,6 +306,20 @@ async function api(req, env, ctx, url) {
     ctx.waitUntil(processWebhook(env, JSON.parse(body || '{}')).catch(e => console.error(e)));
     return new Response('ok');
   }
+  // narração do vídeo (arquivos WAV curtos, um por fala)
+  const nm = p.match(/^\/api\/narracao\/([0-9])$/);
+  if (nm) {
+    const k = 'narr-' + nm[1];
+    if (req.method === 'POST') {
+      if ((req.headers.get('x-key') || '') !== (env.NARR_KEY || 'cds-narracao-7f3k9')) return json({ error: 'chave errada' }, 401);
+      const buf = new Uint8Array(await req.arrayBuffer()); if (!buf.length || buf.length > 1400000) return json({ error: 'arquivo vazio ou grande demais' }, 400);
+      let bin = ''; for (let i = 0; i < buf.length; i += 32768) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 32768));
+      await setKV(env, k, { b64: btoa(bin), at: Date.now() }); return json({ ok: 1, bytes: buf.length });
+    }
+    const v = await getKV(env, k, null); if (!v) return json({ error: 'sem narração' }, 404);
+    const bin = atob(v.b64), out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return new Response(out, { headers: { 'Content-Type': 'audio/wav', 'Cache-Control': 'no-store' } });
+  }
   if (p === '/api/status') {
     const tok = (env.IG_TOKEN || '').trim() || await manualToken(env), st = await igGetStatus(env), cfg = await getCfg(env);
     const row = await getRow(env, 'state'); let jogadores = 0, fila = 0;

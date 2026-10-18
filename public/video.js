@@ -345,6 +345,11 @@ $("vgo").onclick = async () => {
 };
 
 window.__VG = { renderFrame, setup };
+/* narração gerada no computador e enviada pro servidor (/api/narracao/0..5) */
+(async () => { try { const ac = new AudioContext({ sampleRate: SR }), bufs = [];
+  for (let i = 0; i < SCRIPT.length; i++) { const r = await fetch("/api/narracao/" + i, { cache: "no-store" }); if (!r.ok) break; bufs.push(await ac.decodeAudioData(await r.arrayBuffer())); }
+  ac.close(); if (bufs.length) { narrBuf = bufs.map((b, i) => [SCRIPT[i][0] + 0.15, b]); status(`Narração pronta: ${bufs.length} falas carregadas do servidor. Clique em gerar MP4.`); }
+} catch (e) {} })();
 /* primeiro quadro */
 (document.fonts && document.fonts.load ? document.fonts.load(`900 60px Nunito`) : Promise.resolve()).then(() => { setup(); renderFrame(1.6); });
 $("vteam").onchange = () => { setup(); renderFrame(1.6); };
