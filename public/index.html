@@ -36,8 +36,8 @@ body{background:var(--sky);color:var(--ink);font-family:var(--f);font-weight:800
 .bal::after{content:"";position:absolute;left:50%;bottom:-7px;margin-left:-5px;border:5px solid transparent;border-top-color:var(--ink);border-bottom:0}
 .bal i{font-style:normal;color:var(--mut);margin-right:3px;font-size:8.5px}
 .bal.gk{background:var(--sun)}
-.bal.res{background:#eef1f7}
-.bal.res.gk{background:#c9f2d7}
+.bal.rsv{background:#e8ecf4}
+.bal.rsv.gk{background:#c9f2d7}
 .pchip{position:absolute;left:0;top:0;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:1px 8px;font-size:11px;font-weight:900;white-space:nowrap;color:var(--ink)}
 .pchip i{font-style:normal;color:var(--mut);margin-right:4px}
 .pchip.gk{background:var(--sun)}
@@ -755,7 +755,7 @@ function updateLabels(){
   PLAYERS.forEach((arr,ci)=>{ const c=clubs[ci], d=Math.hypot(cp.x-c.x,cp.y-B,cp.z-c.z), lim=ci===selected?95:72; if(d<lim&&(ci===selected?d-1000:d)<fd){ fd=ci===selected?d-1000:d; fc=ci; } });
   const arr=fc===null?[]:PLAYERS.get(fc);
   bals.forEach((d,j)=>{ const p=arr[j]; if(!p){ d.hidden=true; return; } V.set(p.x,PITCH_Y+0.98,p.z).project(camera); if(V.z>1){ d.hidden=true; return; }
-    if(d._h!==p.h||d._r!==p.res){ d._h=p.h; d._r=p.res; d.className="bal"+(p.gk?" gk":"")+(p.res?" res":""); d.innerHTML=`<i>${p.pos}</i>@${esc(p.h)}`; }
+    if(d._h!==p.h||d._r!==p.res){ d._h=p.h; d._r=p.res; d.className="bal"+(p.gk?" gk":"")+(p.res?" rsv":""); d.innerHTML=`<i>${p.pos}</i>@${esc(p.h)}`; }
     d.hidden=false; d.style.transform=`translate3d(${(V.x*.5+.5)*W_|0}px,${((-V.y*.5+.5)*H_-(j%2?14:0))|0}px,0) translate(-50%,-100%)`; });
   if(fc!==null) labels[fc].hidden=true;
 }
