@@ -332,7 +332,7 @@ function band(r0,y0,r1,y1,col,segs,faceFn){ const g=new THREE.LatheGeometry([new
 const segOf=(x,z,segs)=>{ let a=Math.atan2(z,x); if(a<0)a+=Math.PI*2; return Math.floor(a/(Math.PI*2)*segs); };
 const VC=new THREE.MeshLambertMaterial({vertexColors:true,side:THREE.DoubleSide});
 const VC1=new THREE.MeshLambertMaterial({vertexColors:true});
-function IM(geo,mat,n,cast,recv){ const m=new THREE.InstancedMesh(geo,mat,Math.max(1,n)); if(!n) m.count=0; m.frustumCulled=false; m.castShadow=!!cast; m.receiveShadow=!!recv; scene.add(m); return m; }
+function IM(geo,mat,n,cast,recv){ const cnt=Math.max(1,n), m=new THREE.InstancedMesh(geo,mat,cnt); m.instanceColor=new THREE.InstancedBufferAttribute(new Float32Array(cnt*3).fill(1),3); if(!n) m.count=0; m.frustumCulled=false; m.castShadow=!!cast; m.receiveShadow=!!recv; scene.add(m); return m; }
 function setI(m,i,x,y,z,ry,sx,sy,sz){ D3.position.set(x,y,z); D3.rotation.set(0,ry||0,0); D3.scale.set(sx===undefined?1:sx,sy===undefined?(sx===undefined?1:sx):sy,sz===undefined?(sx===undefined?1:sx):sz); D3.updateMatrix(); m.setMatrixAt(i,D3.matrix); }
 function setIR(m,i,x,y,z,rx,ry,rz,s){ D3.position.set(x,y,z); D3.rotation.set(rx,ry,rz); D3.scale.setScalar(s||1); D3.updateMatrix(); m.setMatrixAt(i,D3.matrix); }
 const hide=(m,i)=>{ D3.position.set(0,-50,0); D3.scale.setScalar(0.0001); D3.updateMatrix(); m.setMatrixAt(i,D3.matrix); };
@@ -516,7 +516,6 @@ const bodies=IM(G_BODY,VC1,ACT*(CROWD+PARADE),true,false), heads=IM(G_HEAD,VC1,A
 const banner=IM(G_BANNER,clothMat,ACT,true,false), bstripe=IM(G_BSTRIPE,clothMat,ACT,false,false);
 const smoke=IM(G_SMOKE,new THREE.MeshLambertMaterial({color:0xffffff,transparent:true,opacity:0.5,depthWrite:false}),ACT*PUFFS,false,false);
 const plBody=IM(G_BODY,VC1,11,true,false), plHead=IM(G_HEAD,VC1,11,true,false); plBody.count=0; plHead.count=0;
-[busM,busS,flagC,bodies,heads,banner,bstripe,smoke,plBody,plHead].forEach(m=>m.setColorAt(0,TMP.set(0xffffff)));
 
 const PH=clubs.map(c=>hash(c.i,3)*6.28);
 const CL1=clubs.map(c=>C(c.c1)), CL2=clubs.map(c=>C(c.c2));
