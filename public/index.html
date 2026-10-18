@@ -436,7 +436,7 @@ setColors(); placeStatic(); clubs.forEach(c=>animClub(c,0));
   while(n<NT&&guard<NT*6){ guard++; const x=minX+r()*BW, y=minY+r()*BH; if(!inPoly(x,y)) continue; const z=-y; if(grid.has(Math.floor(x/7)+","+Math.floor(z/7))) continue;
     const lat=y/K+LAT0, lon=x/(K*COS)+LON0; const dense=(lat>-10.5&&lon<-47.5)?1:0.45; if(r()>dense) continue;
     const s=0.6+r()*0.9; setI(m,n,x,H+0.55*s+0.4,z,r()*6,s,s*1.1,s); setI(trunk,n,x,H+0.3,z,0,1,s,1); m.setColorAt(n,TMP.setHex(greens[(r()*4)|0])); n++; }
-  m.count=n; trunk.count=n; m.instanceColor.needsUpdate=true; m.computeBoundingSphere(); trunk.computeBoundingSphere();
+  m.count=n; trunk.count=n; m.instanceColor.needsUpdate=true;
 })();
 
 /* nuvens */
