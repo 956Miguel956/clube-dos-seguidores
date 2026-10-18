@@ -96,12 +96,12 @@ body{background:var(--sky);color:var(--ink);font-family:var(--f);font-weight:800
 .hd{border:2px solid var(--ink);border-radius:999px;padding:1px 8px;background:var(--paper);font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hd.v{border-style:dashed;color:#9aa1b3;border-color:#b8bdca}
 .hd.hl{background:var(--sun)}
-.mini{position:relative;aspect-ratio:16/10;max-width:100%;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(90deg,#62b148 0 10%,#57a63f 10% 20%)}
+.mini{position:relative;flex:none;width:100%;aspect-ratio:3/2;max-width:100%;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;background:repeating-linear-gradient(90deg,#62b148 0 10%,#57a63f 10% 20%)}
 .mini::before{content:"";position:absolute;inset:7%;border:2px solid rgba(255,255,255,.85);border-radius:2px}
 .mini::after{content:"";position:absolute;left:50%;top:7%;bottom:7%;border-left:2px solid rgba(255,255,255,.85)}
 .mk{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;z-index:1}
 .mk i{width:14px;height:14px;border-radius:50%;border:2px solid var(--ink);background:var(--c1,#fff)}
-.mk span{background:var(--paper);border:1.5px solid var(--ink);border-radius:999px;font-size:9.5px;padding:0 5px;max-width:84px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mk span{background:var(--paper);border:1.5px solid var(--ink);border-radius:999px;font-size:9.5px;padding:0 5px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mk.v span{color:#9aa1b3}
 .kv{display:flex;justify-content:space-between;gap:10px;font-size:13.5px;color:var(--mut)}
 .kv b{color:var(--ink);font-weight:900;min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -808,12 +808,13 @@ function renderPanel(){
     const rows=Object.keys(SLOTS).map(k=>{ const hs=byPos[k]||[]; let ch=hs.map(h=>`<span class="hd${h===hlHandle?" hl":""}" title="@${esc(h)}">@${esc(h)}</span>`).join(""); for(let j=hs.length;j<SLOTS[k];j++) ch+=`<span class="hd v">vaga</span>`; return `<div class="pl">${POSP[k]}</div><div class="ch">${ch}</div>`; }).join("");
     body=`<div class="els">${chips}</div><div class="pos">${rows}</div>`;
   } else {
-    const tit=titOf(c.i);
-    const mk=FORM.map((f,j)=>`<div class="mk${tit[j]?"":" v"}" style="left:${(f[1]/1.12*.5+.5)*100}%;top:${(f[2]/0.6*.5+.5)*100}%;--c1:${f[0]==="GOL"?"#ffc83d":c.c1}"><i></i><span>${tit[j]?"@"+esc(tit[j]):f[0]+" vaga"}</span></div>`).join("");
-    const res=E[0].filter(h=>!tit.includes(h));
+    const sq=squadOf(c.i), tit=sq.tit;
+    const mk=FORM.map((f,j)=>`<div class="mk${tit[j]?"":" v"}" style="left:${8+(f[1]+0.9)/1.52*84}%;top:${50+f[2]/0.42*38}%;--c1:${f[0]==="GOL"?"#ffc83d":c.c1}"><i></i><span>${tit[j]?"@"+esc(tit[j]):f[0]}</span></div>`).join("");
+    const res=sq.res.map((h,j)=>h?`<span class="hd" title="@${esc(h)}"><small style="color:var(--mut)">${mem.byH.get(h).pos}</small> @${esc(h)}</span>`:"").join("");
     body=`<div class="mini">${mk}</div>
       <div class="kv"><span>formação</span><b>4-3-3</b></div>
-      <div class="kv"><span>reservas</span><b>${res.length}</b></div>
+      <div class="kv"><span>reservas</span><b>${sq.res.filter(Boolean).length}</b></div>
+      ${res?`<div class="pos"><div class="pl">no banco</div><div class="ch">${res}</div></div>`:""}
       ${canSort()?`<button class="btn sm y" id="psort">🎲 sortear titulares</button>`:""}
       <p class="note">Os titulares saem do elenco Principal. Antes de cada jogo do campeonato, o sorteio é refeito.</p>`;
   }
