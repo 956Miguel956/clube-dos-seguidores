@@ -306,6 +306,14 @@ async function api(req, env, ctx, url) {
     ctx.waitUntil(processWebhook(env, JSON.parse(body || '{}')).catch(e => console.error(e)));
     return new Response('ok');
   }
+  if (p === '/api/narracao/roteiro') return json({ falas: [
+    { t: 'Pare tudo! O seu nome pode estar dentro do estádio do seu time!', max: 2.9 },
+    { t: 'É só comentar aqui embaixo o nome do seu time de coração, e você vira jogador dele no mapa!', max: 6.8 },
+    { t: 'Os onze primeiros a comentar são os titulares, com posição sorteada. E o primeiro de todos vira o capitão!', max: 7.8 },
+    { t: 'Acabaram as onze vagas? Você vai pro time reserva. Depois vêm o sub vinte e três, o sub vinte e o sub dezessete.', max: 7.8 },
+    { t: 'São mais de duzentos times, do Flamengo ao Ipatinga. É o maior torneio três dê do mundo!', max: 8.8 },
+    { t: 'Segue o perfil! Em breve começa o Super Campeonato Brasileiro, pra ver qual time vai ser o grande campeão. Comenta agora o seu time!', max: 9.6 }
+  ] });
   // narração do vídeo (arquivos WAV curtos, um por fala)
   const nm = p.match(/^\/api\/narracao\/([0-9])$/);
   if (nm) {
