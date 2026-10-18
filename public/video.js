@@ -104,14 +104,14 @@ const lerp = (a, b, k) => a + (b - a) * k;
 const BR = { x: (W.minX + W.maxX) / 2 + 60, z: -(W.minY + W.maxY) / 2 - 40 };
 function shotAt(t) { // alvo, distância, inclinação (0 = de cima), giro
   const c = clubs[F];
-  if (t < 3) { const k = easeOut(t / 1.1); return { x: c.x, z: c.z, d: lerp(9, 21, k) + t * 0.4, p: 0.38, a: 0.3 + t * 0.12, cut: 0 }; }
+  if (t < 3) { const k = easeOut(t / 1.1); return { x: c.x, z: c.z, d: lerp(11, 25, k) + t * 0.5, p: 0.3, a: Math.PI / 2 + 0.25 - t * 0.06, cut: 0 }; }
   if (t < 10) {
     const k1 = ease((t - 3) / 1.7), k2 = ease((t - 9) / 1);
     const d = t < 9 ? lerp(22, 300, k1) : lerp(300, 23, k2), p = t < 9 ? lerp(0.38, 0.78, k1) : lerp(0.78, 0.36, k2);
-    return { x: c.x, z: c.z, d, p, a: 0.66 + (t - 3) * 0.05, cut: 0 };
+    return { x: c.x, z: c.z, d: t < 9 ? lerp(26.5, 300, k1) : lerp(300, 27, k2), p, a: Math.PI / 2 + 0.07 + 0.5 * k1 - 0.57 * k2, cut: 0 };
   }
-  if (t < 18) return { x: c.x, z: c.z, d: lerp(23, 20.5, (t - 10) / 8), p: 0.36, a: 1.0 + (t - 10) * 0.03, cut: 0 };
-  if (t < 26) return { x: c.x, z: c.z, d: lerp(21, 25, ease((t - 18) / 8)), p: lerp(0.36, 0.6, ease((t - 18) / 5)), a: 1.24 + (t - 18) * 0.06, cut: 0 };
+  if (t < 18) return { x: c.x, z: c.z, d: lerp(27, 25.5, (t - 10) / 8), p: 0.3, a: Math.PI / 2 + (t - 10) * 0.012, cut: 0 };
+  if (t < 26) return { x: c.x, z: c.z, d: lerp(25.5, 29, ease((t - 18) / 8)), p: lerp(0.3, 0.55, ease((t - 18) / 5)), a: Math.PI / 2 + 0.1 + (t - 18) * 0.05, cut: 0 };
   if (t < 35) { const i = Math.min(TOUR.length - 1, Math.floor((t - 26) / 1.8)), lt = t - 26 - i * 1.8, cc = TOUR[i]; return { x: cc.x, z: cc.z, d: lerp(34, 27, lt / 1.8), p: 0.92, a: 2.2 + i * 1.3 + lt * 0.22, cut: i + 1, club: cc }; }
   const k = ease((t - 35) / 3.2), last = TOUR[TOUR.length - 1];
   return { x: lerp(last.x, BR.x, k), z: lerp(last.z, BR.z, k), d: lerp(30, 2050, Math.pow(k, 0.7)), p: lerp(0.92, 0.42, k), a: 0.2 + (t - 35) * 0.025, cut: 9 };
@@ -341,6 +341,7 @@ $("vgo").onclick = async () => {
   btn.disabled = false;
 };
 
+window.__VG = { renderFrame, setup };
 /* primeiro quadro */
 (document.fonts && document.fonts.load ? document.fonts.load(`900 60px Nunito`) : Promise.resolve()).then(() => { setup(); renderFrame(1.6); });
 $("vteam").onchange = () => { setup(); renderFrame(1.6); };
